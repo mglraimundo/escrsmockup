@@ -66,23 +66,23 @@
 
             <MudPaper Elevation="0" Class="patient-strip">
                 <MudGrid Spacing="0">
-                    <MudItem xs="12" md="3">
+                    <MudItem xs="12" Class="patient-field-item">
                         @PatientInput("Surgeon*", Patient.Surgeon, value => Patient.Surgeon = value)
                     </MudItem>
 
-                    <MudItem xs="12" md="3">
+                    <MudItem xs="12" Class="patient-field-item">
                         @PatientInput("Patient Initials*", Patient.Initials, value => Patient.Initials = value)
                     </MudItem>
 
-                    <MudItem xs="12" md="2">
+                    <MudItem xs="12" Class="patient-field-item">
                         @PatientInput("ID", Patient.Id, value => Patient.Id = value)
                     </MudItem>
 
-                    <MudItem xs="12" md="2">
+                    <MudItem xs="12" Class="patient-field-item">
                         @PatientInput("Age", Patient.Age, value => Patient.Age = value, "years")
                     </MudItem>
 
-                    <MudItem xs="12" md="2">
+                    <MudItem xs="12" Class="patient-field-item">
                         @GenderSelect()
                     </MudItem>
                 </MudGrid>

@@ -160,6 +160,11 @@ body {
     width: 100%;
 }
 
+.patient-field-item {
+    flex: 1 1 0 !important;
+    max-width: none !important;
+}
+
 .field-cell {
     min-height: 72px;
     padding: 7px 10px 8px;
@@ -482,6 +487,11 @@ body {
 
     .field-cell {
         margin-inline: 0;
+    }
+
+    .patient-field-item {
+        flex-basis: 100% !important;
+        max-width: 100% !important;
     }
 
     .topbar-actions {
