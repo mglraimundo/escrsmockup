@@ -1,0 +1,361 @@
+@page "/"
+@using MudBlazor
+
+<PageTitle>ESCRS IOL Calculator Mockup</PageTitle>
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="app-shell">
+    <MudPaper Elevation="3" Square="true" Class="topbar">
+        <div class="topbar-left">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" />
+
+            <img class="brand-logo"
+                 src="assets/ESCRS_IOL_logo.png"
+                 alt="ESCRS IOL Calculator" />
+        </div>
+
+        <div class="topbar-actions">
+            <MudButton Variant="Variant.Filled"
+                       Class="decimal-btn"
+                       OnClick="ToggleDecimalFormat">
+                DEC (@(UseCommaDecimalFormat ? "0,00" : "0.00"))
+            </MudButton>
+
+            <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" />
+        </div>
+    </MudPaper>
+
+    <MudContainer MaxWidth="MaxWidth.False" Class="main-container">
+
+        <MudPaper Elevation="1" Class="section-card calculator-card">
+            <MudText Typo="Typo.caption" Class="section-label">
+                Non-Toric Calculators
+            </MudText>
+
+            <div class="calculator-row">
+                @foreach (var calc in Calculators)
+                {
+                    <div class="calc-option">
+                        <MudCheckBox T="bool"
+                                     @bind-Value="calc.Enabled"
+                                     Color="Color.Primary"
+                                     Dense="true" />
+
+                        <MudText Typo="Typo.body2">@calc.Name</MudText>
+
+                        <MudIconButton Icon="@Icons.Material.Outlined.Info"
+                                       Size="Size.Small"
+                                       Color="Color.Secondary"
+                                       Class="info-icon" />
+                    </div>
+                }
+            </div>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="section-card patient-card">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Upload"
+                       Class="load-button">
+                LOAD FROM BIOMAPI
+            </MudButton>
+
+            <MudPaper Elevation="0" Class="patient-strip">
+                <MudGrid Spacing="0">
+                    <MudItem xs="12" md="3">
+                        @PatientInput("Surgeon*", Patient.Surgeon, value => Patient.Surgeon = value)
+                    </MudItem>
+
+                    <MudItem xs="12" md="3">
+                        @PatientInput("Patient Initials*", Patient.Initials, value => Patient.Initials = value)
+                    </MudItem>
+
+                    <MudItem xs="12" md="2">
+                        @PatientInput("ID", Patient.Id, value => Patient.Id = value)
+                    </MudItem>
+
+                    <MudItem xs="12" md="2">
+                        @PatientInput("Age", Patient.Age, value => Patient.Age = value, "years")
+                    </MudItem>
+
+                    <MudItem xs="12" md="2">
+                        @GenderSelect()
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudPaper>
+
+        <MudGrid Spacing="3">
+            <MudItem xs="12" lg="6">
+                @EyePanel("OD (Right)", RightEye, true)
+            </MudItem>
+
+            <MudItem xs="12" lg="6">
+                @EyePanel("OS (Left)", LeftEye, false)
+            </MudItem>
+        </MudGrid>
+
+        <div class="bottom-actions">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Calculate"
+                       Class="action-button">
+                CALCULATE
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       Class="action-button reset-button">
+                RESET
+            </MudButton>
+        </div>
+    </MudContainer>
+</div>
+
+@code {
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#5140D9",
+            Secondary = "#1687F2",
+            Tertiary = "#FF2F7D",
+            Background = "#F6F8FF",
+            Surface = "#FFFFFF",
+            AppbarBackground = "#5140D9",
+            AppbarText = "#FFFFFF",
+            TextPrimary = "#16213F",
+            TextSecondary = "#64708A",
+            LinesDefault = "#E2E7F3"
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = new[] { "Inter", "Roboto", "Segoe UI", "Arial", "sans-serif" },
+                FontSize = "0.9rem"
+            },
+            H6 = new H6Typography
+            {
+                FontWeight = "800",
+                LetterSpacing = "-0.02em"
+            },
+            Button = new ButtonTypography
+            {
+                FontWeight = "800",
+                TextTransform = "none"
+            }
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "10px"
+        }
+    };
+
+    private List<CalculatorOption> Calculators = new()
+    {
+        new("Barrett UII"),
+        new("Cooke K6"),
+        new("EVO"),
+        new("Hoffer®QST"),
+        new("Kane"),
+        new("Pearl DGS")
+    };
+
+    private List<ConstantItem> Constants = new()
+    {
+        new("Barrett A-Constant", "119.3537"),
+        new("Cooke A-Constant", "119.3556"),
+        new("EVO A-Constant", "119.1"),
+        new("Hoffer® pACD", "5.76"),
+        new("Kane A-Constant", "119.3537"),
+        new("Pearl DGS A-Constant", "119.3537")
+    };
+
+    private PatientModel Patient { get; } = new();
+
+    private EyeModel RightEye { get; } = new();
+
+    private EyeModel LeftEye { get; } = new();
+
+    private bool UseCommaDecimalFormat;
+
+    private void ToggleDecimalFormat()
+    {
+        UseCommaDecimalFormat = !UseCommaDecimalFormat;
+    }
+
+    private RenderFragment PatientInput(string label, string value, Action<string> valueChanged, string? unit = null) => @<div class="field-cell">
+        <MudTextField T="string"
+                      Label="@label"
+                      Value="@value"
+                      ValueChanged="@valueChanged"
+                      Variant="Variant.Text"
+                      Margin="Margin.Dense"
+                      Adornment="@(string.IsNullOrWhiteSpace(unit) ? Adornment.None : Adornment.End)"
+                      AdornmentText="@unit" />
+    </div>;
+
+    private RenderFragment GenderSelect() => @<div class="field-cell">
+        <MudSelect T="string"
+                   Label="Gender*"
+                   @bind-Value="Patient.Gender"
+                   Placeholder=" "
+                   Variant="Variant.Text"
+                   Margin="Margin.Dense">
+            <MudSelectItem T="string" Value="@("Male")">Male</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Female")">Female</MudSelectItem>
+        </MudSelect>
+    </div>;
+
+    private RenderFragment MiniField(EyeField field) => @<div class="mini-field">
+        <MudTextField T="string"
+                      Label="@field.Label"
+                      @bind-Value="field.Value"
+                      Variant="Variant.Text"
+                      Margin="Margin.Dense"
+                      Adornment="Adornment.End"
+                      AdornmentText="@field.Unit" />
+    </div>;
+
+    private RenderFragment MiniText(string label, string value, Action<string> valueChanged) => @<div class="mini-field">
+        <MudTextField T="string"
+                      Label="@label"
+                      Value="@value"
+                      ValueChanged="@valueChanged"
+                      Variant="Variant.Text"
+                      Margin="Margin.Dense" />
+    </div>;
+
+    private RenderFragment MiniSelect(string label, string value, Action<string> valueChanged, IEnumerable<string> options) => @<div class="mini-field">
+        <MudSelect T="string"
+                   Label="@label"
+                   Value="@value"
+                   ValueChanged="@valueChanged"
+                   Variant="Variant.Text"
+                   Margin="Margin.Dense">
+            @foreach (var option in options)
+            {
+                <MudSelectItem T="string" Value="@option">@option</MudSelectItem>
+            }
+        </MudSelect>
+    </div>;
+
+    private RenderFragment EyePanel(string title, EyeModel eye, bool forward) => @<MudPaper Elevation="0" Class="eye-card">
+        <div class="eye-header">
+            <div class="eye-icon">
+                <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
+            </div>
+
+            <div class="eye-title">@title</div>
+        </div>
+
+        <div class="switch-row">
+            <MudSwitch T="bool" Label="Toric" Color="Color.Primary" Class="switch-item" />
+            <MudSwitch T="bool" Label="Keratoconus" Color="Color.Primary" Class="switch-item" />
+            <MudSwitch T="bool" Label="Argos (SoS) AL" Color="Color.Primary" Class="switch-item" />
+            <MudSwitch T="bool" Label="Post LASIK/PRK/RK" Color="Color.Primary" Class="switch-item" />
+        </div>
+
+        <div class="measurement-grid">
+            @MiniField(eye.AL)
+            @MiniField(eye.ACD)
+            @MiniField(eye.LT)
+            @MiniField(eye.CCT)
+            @MiniField(eye.WTW)
+            @MiniField(eye.K1)
+            @MiniField(eye.K2)
+
+            @MiniSelect("Index*", eye.Index, value => eye.Index = value, IndexOptions)
+            @MiniText("Target Refraction", eye.TargetRefraction, value => eye.TargetRefraction = value)
+
+            @MiniSelect("Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
+            @MiniSelect("Select IOL", eye.Iol, value => eye.Iol = value, IolOptions)
+        </div>
+
+        <div class="constants-grid">
+            @foreach (var item in Constants)
+            {
+                <div class="constant-row">
+                    <div class="constant-field">
+                        <div class="constant-label">@item.Label</div>
+                        <div class="constant-value">@item.Value</div>
+                    </div>
+
+                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                   Size="Size.Small" />
+
+                    <MudIconButton Icon="@Icons.Material.Outlined.Info"
+                                   Size="Size.Small"
+                                   Color="Color.Secondary" />
+                </div>
+            }
+        </div>
+
+        <div class="eye-nav @(forward ? "forward" : "back")">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="chevron-button">
+                @(forward ? "»" : "«")
+            </MudButton>
+        </div>
+    </MudPaper>;
+
+    public class CalculatorOption
+    {
+        public string Name { get; set; }
+        public bool Enabled { get; set; } = true;
+
+        public CalculatorOption(string name)
+        {
+            Name = name;
+        }
+    }
+
+    public record ConstantItem(string Label, string Value);
+
+    public class PatientModel
+    {
+        public string Surgeon { get; set; } = "MR";
+        public string Initials { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
+        public string Age { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
+    }
+
+    public class EyeModel
+    {
+        public EyeField AL { get; } = new("AL", "mm");
+        public EyeField ACD { get; } = new("ACD", "mm");
+        public EyeField LT { get; } = new("LT", "mm");
+        public EyeField CCT { get; } = new("CCT", "µm");
+        public EyeField WTW { get; } = new("WTW", "mm");
+        public EyeField K1 { get; } = new("K1", "D");
+        public EyeField K2 { get; } = new("K2", "D");
+        public string Index { get; set; } = "1.3375";
+        public string TargetRefraction { get; set; } = "-0.25";
+        public string Manufacturer { get; set; } = "Alcon";
+        public string Iol { get; set; } = "Clareon CNA0T0";
+    }
+
+    public class EyeField
+    {
+        public EyeField(string label, string unit)
+        {
+            Label = label;
+            Unit = unit;
+        }
+
+        public string Label { get; }
+        public string Value { get; set; } = string.Empty;
+        public string Unit { get; }
+    }
+
+    private static readonly string[] IndexOptions = { "1.3375", "1.3320" };
+    private static readonly string[] ManufacturerOptions = { "---", "Alcon", "Bausch + Lomb", "Johnson & Johnson", "Zeiss" };
+    private static readonly string[] IolOptions = { "---", "Clareon CNA0T0", "AcrySof IQ SN60WF", "enVista MX60", "Tecnis DCB00" };
+}

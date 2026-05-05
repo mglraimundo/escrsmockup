@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+
+# Local browser/test artifacts
+.playwright-cli/
+
+# IDE/editor state
+.vs/
+.vscode/
+*.user
+*.suo
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
