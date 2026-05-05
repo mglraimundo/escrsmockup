@@ -194,8 +194,11 @@
                       Label="@label"
                       Value="@value"
                       ValueChanged="@valueChanged"
-                      Variant="Variant.Text"
+                      Variant="Variant.Filled"
                       Margin="Margin.Dense"
+                      Placeholder="–"
+                      Clearable="true"
+                      ClearIcon="@Icons.Material.Filled.Close"
                       Adornment="@(string.IsNullOrWhiteSpace(unit) ? Adornment.None : Adornment.End)"
                       AdornmentText="@unit" />
     </div>;
@@ -204,8 +207,10 @@
         <MudSelect T="string"
                    Label="Gender*"
                    @bind-Value="Patient.Gender"
-                   Placeholder=" "
-                   Variant="Variant.Text"
+                   Placeholder="–"
+                   Variant="Variant.Filled"
+                   Clearable="true"
+                   ClearIcon="@Icons.Material.Filled.Close"
                    Margin="Margin.Dense">
             <MudSelectItem T="string" Value="@("Male")">Male</MudSelectItem>
             <MudSelectItem T="string" Value="@("Female")">Female</MudSelectItem>
@@ -216,8 +221,11 @@
         <MudTextField T="string"
                       Label="@field.Label"
                       @bind-Value="field.Value"
-                      Variant="Variant.Text"
+                      Variant="Variant.Filled"
                       Margin="Margin.Dense"
+                      Placeholder="–"
+                      Clearable="true"
+                      ClearIcon="@Icons.Material.Filled.Close"
                       Adornment="Adornment.End"
                       AdornmentText="@field.Unit" />
     </div>;
@@ -227,7 +235,10 @@
                       Label="@label"
                       Value="@value"
                       ValueChanged="@valueChanged"
-                      Variant="Variant.Text"
+                      Variant="Variant.Filled"
+                      Placeholder="–"
+                      Clearable="true"
+                      ClearIcon="@Icons.Material.Filled.Close"
                       Margin="Margin.Dense" />
     </div>;
 
@@ -236,7 +247,10 @@
                    Label="@label"
                    Value="@value"
                    ValueChanged="@valueChanged"
-                   Variant="Variant.Text"
+                   Variant="Variant.Filled"
+                   Placeholder="–"
+                   Clearable="true"
+                   ClearIcon="@Icons.Material.Filled.Close"
                    Margin="Margin.Dense">
             @foreach (var option in options)
             {
@@ -283,11 +297,20 @@
                 <div class="constant-row">
                     <div class="constant-field">
                         <div class="constant-label">@item.Label</div>
-                        <div class="constant-value">@item.Value</div>
-                    </div>
+                        <div class="constant-value-row">
+                            <div class="constant-value @(string.IsNullOrWhiteSpace(item.Value) ? "empty" : null)">
+                                @(string.IsNullOrWhiteSpace(item.Value) ? "–" : item.Value)
+                            </div>
 
-                    <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                   Size="Size.Small" />
+                            @if (!string.IsNullOrWhiteSpace(item.Value))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                               Size="Size.Small"
+                                               Class="field-clear-button"
+                                               OnClick="@(() => item.Value = string.Empty)" />
+                            }
+                        </div>
+                    </div>
 
                     <MudIconButton Icon="@Icons.Material.Outlined.Info"
                                    Size="Size.Small"
@@ -316,7 +339,17 @@
         }
     }
 
-    public record ConstantItem(string Label, string Value);
+    public class ConstantItem
+    {
+        public ConstantItem(string label, string value)
+        {
+            Label = label;
+            Value = value;
+        }
+
+        public string Label { get; }
+        public string Value { get; set; }
+    }
 
     public class PatientModel
     {

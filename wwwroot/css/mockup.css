@@ -5,6 +5,9 @@
     --surface: #ffffff;
     --bg: #f6f8ff;
     --border: #e2e7f3;
+    --field-bg: #f7f9fe;
+    --field-bg-hover: #f3f6fd;
+    --field-bg-focus: #ffffff;
     --text-main: #16213f;
     --text-muted: #64708a;
 }
@@ -68,6 +71,7 @@ body {
 .decimal-btn:hover {
     background: rgba(255, 255, 255, 0.18) !important;
     border-color: rgba(255, 255, 255, 0.44);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
 }
 
 .main-container {
@@ -131,24 +135,54 @@ body {
     box-shadow: 0 8px 16px rgba(81, 64, 217, 0.22);
 }
 
+.load-button,
+.chevron-button,
+.action-button:not(.reset-button) {
+    box-shadow: 0 8px 16px rgba(81, 64, 217, 0.22) !important;
+}
+
+.load-button:hover,
+.chevron-button:hover,
+.action-button:not(.reset-button):hover {
+    background: var(--primary-dark) !important;
+    box-shadow: 0 10px 18px rgba(81, 64, 217, 0.24) !important;
+}
+
 .patient-strip {
-    border: 1px solid var(--border);
     border-radius: 12px;
-    overflow: hidden;
-    background: white;
+    background: transparent;
+    padding: 0;
+}
+
+.patient-strip .mud-grid {
+    gap: 8px 0;
+    margin: 0;
+    width: 100%;
 }
 
 .field-cell {
     min-height: 72px;
-    padding: 14px 18px;
-    border-right: 1px solid var(--border);
+    padding: 7px 10px 8px;
+    margin-inline: 4px;
+    border-radius: 9px;
+    background: var(--field-bg);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
-.field-cell:last-child {
-    border-right: 0;
+.patient-strip .mud-grid-item:first-child .field-cell {
+    margin-left: 0;
+}
+
+.patient-strip .mud-grid-item:last-child .field-cell {
+    margin-right: 0;
+}
+
+.field-cell:hover {
+    background: var(--field-bg-hover);
+    box-shadow: inset 0 0 0 1px rgba(81, 64, 217, 0.10);
 }
 
 .field-cell .mud-input-control,
@@ -157,9 +191,70 @@ body {
 }
 
 .field-cell .mud-input,
-.mini-field .mud-input {
+.mini-field .mud-input,
+.field-cell .mud-input-filled,
+.mini-field .mud-input-filled {
+    background: transparent !important;
+    border-radius: 0;
+    min-height: 40px;
     font-weight: 500;
     color: var(--text-main);
+}
+
+.field-cell .mud-input::before,
+.field-cell .mud-input::after,
+.mini-field .mud-input::before,
+.mini-field .mud-input::after,
+.field-cell .mud-input-filled::before,
+.field-cell .mud-input-filled::after,
+.mini-field .mud-input-filled::before,
+.mini-field .mud-input-filled::after {
+    display: none !important;
+}
+
+.field-cell .mud-input-slot,
+.mini-field .mud-input-slot {
+    padding-bottom: 0 !important;
+}
+
+.field-cell .mud-input-adornment,
+.mini-field .mud-input-adornment {
+    margin-top: 0 !important;
+}
+
+.field-cell .mud-input-adornment-end,
+.mini-field .mud-input-adornment-end {
+    gap: 2px;
+}
+
+.field-cell .mud-icon-button,
+.mini-field .mud-icon-button,
+.field-clear-button {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+    color: var(--text-muted);
+}
+
+.field-cell .mud-icon-button:hover,
+.mini-field .mud-icon-button:hover,
+.field-clear-button:hover,
+.constant-row > .mud-icon-button:hover,
+.info-icon:hover,
+.topbar .mud-icon-button:hover {
+    background: rgba(81, 64, 217, 0.08);
+    color: var(--text-main);
+    box-shadow: none !important;
+}
+
+.info-icon:hover {
+    background: rgba(22, 135, 242, 0.08);
+    color: var(--secondary);
+}
+
+.topbar .mud-icon-button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
 }
 
 .field-cell .mud-input-label,
@@ -219,18 +314,17 @@ body {
 
 .mini-field {
     min-height: 54px;
-    border: 1px solid var(--border);
     border-radius: 9px;
-    background: #ffffff;
-    padding: 4px 12px 6px;
+    background: var(--field-bg);
+    padding: 5px 12px 7px;
     display: flex;
     align-items: center;
-    transition: border-color 140ms ease, box-shadow 140ms ease;
+    transition: background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .mini-field:hover {
-    border-color: rgba(81, 64, 217, 0.35);
-    box-shadow: 0 4px 12px rgba(81, 64, 217, 0.06);
+    background: var(--field-bg-hover);
+    box-shadow: inset 0 0 0 1px rgba(81, 64, 217, 0.12), 0 4px 12px rgba(81, 64, 217, 0.05);
 }
 
 .constants-grid {
@@ -242,17 +336,22 @@ body {
 
 .constant-row {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: 8px;
 }
 
 .constant-field {
     min-height: 58px;
-    border: 1px solid var(--border);
     border-radius: 9px;
     padding: 8px 12px;
-    background: #ffffff;
+    background: var(--field-bg);
+    transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.constant-field:hover {
+    background: var(--field-bg-hover);
+    box-shadow: inset 0 0 0 1px rgba(81, 64, 217, 0.12), 0 4px 12px rgba(81, 64, 217, 0.05);
 }
 
 .constant-label {
@@ -266,6 +365,28 @@ body {
     font-size: 0.93rem;
     font-weight: 500;
     color: var(--text-main);
+}
+
+.constant-value.empty {
+    color: var(--text-muted);
+}
+
+.constant-value-row {
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.constant-value-row .constant-value {
+    min-width: 0;
+}
+
+.constant-row > .mud-icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 5px;
 }
 
 .eye-nav {
@@ -323,6 +444,8 @@ body {
 
 .reset-button:hover {
     background: #e5e9f2 !important;
+    border-color: #cfd6e5;
+    box-shadow: none !important;
 }
 
 .mud-input-control {
@@ -358,8 +481,7 @@ body {
     }
 
     .field-cell {
-        border-right: 0;
-        border-bottom: 1px solid var(--border);
+        margin-inline: 0;
     }
 
     .topbar-actions {
