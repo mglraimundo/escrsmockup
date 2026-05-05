@@ -1,5 +1,6 @@
 @page "/"
 @using MudBlazor
+@implements IDisposable
 
 <PageTitle>ESCRS IOL Calculator Mockup</PageTitle>
 
@@ -113,10 +114,63 @@
                 RESET
             </MudButton>
         </div>
+
+        <footer class="calculator-footer">
+            <div class="sponsor-banner">
+                <img src="@ActiveBanner"
+                     alt="ESCRS sponsor banner" />
+            </div>
+
+            <div class="escrs-footer">
+                <img src="assets/escrs_logo.svg"
+                     alt="ESCRS" />
+            </div>
+        </footer>
     </MudContainer>
 </div>
 
 @code {
+    private readonly string[] BannerImages = { "assets/banner1.png", "assets/banner2.png" };
+    private PeriodicTimer? _bannerTimer;
+    private CancellationTokenSource? _bannerTimerCancellation;
+    private int _activeBannerIndex;
+
+    private string ActiveBanner => BannerImages[_activeBannerIndex];
+
+    protected override void OnInitialized()
+    {
+        _bannerTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        _bannerTimerCancellation = new CancellationTokenSource();
+        _ = RotateBannersAsync(_bannerTimerCancellation.Token);
+    }
+
+    private async Task RotateBannersAsync(CancellationToken cancellationToken)
+    {
+        if (_bannerTimer is null)
+        {
+            return;
+        }
+
+        try
+        {
+            while (await _bannerTimer.WaitForNextTickAsync(cancellationToken))
+            {
+                _activeBannerIndex = (_activeBannerIndex + 1) % BannerImages.Length;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        _bannerTimerCancellation?.Cancel();
+        _bannerTimerCancellation?.Dispose();
+        _bannerTimer?.Dispose();
+    }
+
     private readonly MudTheme _theme = new()
     {
         PaletteLight = new PaletteLight

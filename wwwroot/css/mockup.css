@@ -453,6 +453,45 @@ body {
     box-shadow: none !important;
 }
 
+.calculator-footer {
+    margin-top: 18px;
+}
+
+.sponsor-banner {
+    min-height: 150px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(26, 39, 72, 0.06);
+}
+
+.sponsor-banner img {
+    display: block;
+    width: 100%;
+    max-height: 150px;
+    object-fit: contain;
+}
+
+.escrs-footer {
+    min-height: 46px;
+    padding: 26px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.escrs-footer img {
+    display: block;
+    width: clamp(72px, 10vw, 112px);
+    max-height: 28px;
+    object-fit: contain;
+    opacity: 0.72;
+}
+
 .mud-input-control {
     margin-top: 0 !important;
 }
@@ -507,5 +546,24 @@ body {
     .decimal-btn {
         min-width: 92px;
         padding-inline: 10px;
+    }
+
+    .sponsor-banner {
+        min-height: 92px;
+        border-radius: 10px;
+    }
+
+    .sponsor-banner img {
+        max-height: 92px;
+    }
+
+    .escrs-footer {
+        min-height: 40px;
+        padding-top: 22px;
+    }
+
+    .escrs-footer img {
+        width: 78px;
+        max-height: 24px;
     }
 }
