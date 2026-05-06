@@ -94,34 +94,11 @@ body {
     margin-bottom: 12px;
 }
 
-.calculator-card {
-    padding: 14px 18px;
-}
-
 .section-label {
     display: block;
     margin-bottom: 10px;
     color: var(--text-main);
     font-weight: 500;
-}
-
-.calculator-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 22px;
-    align-items: center;
-}
-
-.calc-option {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
-.calc-option .mud-typography {
-    flex: 0 1 auto;
-    min-width: 0;
 }
 
 .info-icon {
@@ -655,27 +632,73 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 12px;
+    margin: -14px -14px 12px -14px;
+    padding: 10px 14px;
+    border-radius: 10px 10px 0 0;
+    background: #e8ecf8;
+    color: #16213f;
 }
 
-.eye-badge {
-    min-height: 34px;
-    border-radius: 999px;
+.eye-label {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 6px 12px;
-    background: #f1f3f9;
-    color: #6b7293;
-    border: 1px solid #d8deea;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 800;
 }
 
+.eye-card.od-card {
+    border-color: #c3d5ee;
+    box-shadow: inset 3px 0 0 rgba(22, 135, 242, 0.18), 0 10px 26px rgba(26, 39, 72, 0.07);
+}
+
 .eye-card.os-card {
-    background: linear-gradient(0deg, rgba(81, 64, 217, 0.075), rgba(81, 64, 217, 0.075)), white;
     border-color: #c9c3ee;
     box-shadow: inset 3px 0 0 rgba(81, 64, 217, 0.18), 0 10px 26px rgba(26, 39, 72, 0.07);
+}
+
+.eye-card.os-card .eye-header {
+    background: #ece8f8;
+    color: #2e1e6e;
+}
+
+.eye-header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.enable-btn {
+    border: 1px solid #d8deea;
+    border-radius: 999px;
+    background: #f4f6fb;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    min-height: 32px;
+    padding: 0 12px;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.enable-btn.active {
+    background: #e6f4ea;
+    color: #1e8e3e;
+    border-color: #a8dab5;
+}
+
+.enable-btn:hover {
+    border-color: #b0b8cc;
+}
+
+.eye-body.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    filter: grayscale(0.6);
+    transition: opacity 0.2s;
 }
 
 .toric-segment {
@@ -1068,12 +1091,6 @@ body {
 
     .main-container {
         padding: 14px;
-    }
-
-    .calculator-row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px 8px;
     }
 
     .measurement-grid,

@@ -33,31 +33,6 @@
 
     <MudContainer MaxWidth="MaxWidth.False" Class="main-container">
 
-        <MudPaper Elevation="1" Class="section-card calculator-card">
-            <MudText Typo="Typo.caption" Class="section-label">
-                Non-Toric Calculators
-            </MudText>
-
-            <div class="calculator-row">
-                @foreach (var calc in Calculators)
-                {
-                    <div class="calc-option">
-                        <MudCheckBox T="bool"
-                                     @bind-Value="calc.Enabled"
-                                     Color="Color.Primary"
-                                     Dense="true" />
-
-                        <MudText Typo="Typo.body2">@calc.Name</MudText>
-
-                        <MudIconButton Icon="@Icons.Material.Outlined.Info"
-                                       Size="Size.Small"
-                                       Color="Color.Secondary"
-                                       Class="info-icon" />
-                    </div>
-                }
-            </div>
-        </MudPaper>
-
         <MudPaper Elevation="1" Class="@BiomApiCardClass">
             <button type="button"
                     class="biomapi-card-header"
@@ -354,16 +329,6 @@
         }
     };
 
-    private List<CalculatorOption> Calculators = new()
-    {
-        new("Barrett UII"),
-        new("Cooke K6"),
-        new("EVO"),
-        new("Hoffer®QST"),
-        new("Kane"),
-        new("Pearl DGS")
-    };
-
     private List<ConstantItem> Constants = new()
     {
         new("Barrett A-Constant", "119.3537"),
@@ -381,7 +346,7 @@
     private EyeModel LeftEye { get; } = new();
 
     private bool UseCommaDecimalFormat;
-    private bool _isBiomApiExpanded = true;
+    private bool _isBiomApiExpanded = false;
     private int _activeBiomApiTab;
     private bool _isBiomApiLoading;
     private string? _selectedUploadFile;
@@ -603,9 +568,9 @@
         </button>
     </div>;
 
-    private RenderFragment EyePanel(string eyeCode, string side, EyeModel eye, bool forward) => @<MudPaper Elevation="0" Class="@($"eye-card {(forward ? "od-card" : "os-card")}")">
+    private RenderFragment EyePanel(string eyeCode, string side, EyeModel eye, bool forward) => @<MudPaper Elevation="0" Class="@($"eye-card {(forward ? "od-card" : "os-card")} {(eye.IsEnabled ? null : "disabled")}")">
         <div class="eye-header">
-            <div class="eye-badge">
+            <span class="eye-label">
                 @if (forward)
                 {
                     <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
@@ -616,124 +581,123 @@
                     <span>@eyeCode (@side)</span>
                     <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
                 }
-            </div>
+            </span>
 
-            @ToricSegment(eye)
+            <div class="eye-header-controls">
+                @ToricSegment(eye)
+                <button type="button"
+                        class="@($"enable-btn {(eye.IsEnabled ? "active" : null)}")"
+                        aria-pressed="@eye.IsEnabled"
+                        @onclick="@(() => eye.IsEnabled = !eye.IsEnabled)">
+                    @(eye.IsEnabled ? "ON" : "OFF")
+                </button>
+            </div>
         </div>
 
-        <div class="toggle-chip-row">
-            <button type="button"
-                    class="@($"toggle-chip {(eye.IsKeratoconus ? "active" : null)}")"
-                    aria-pressed="@eye.IsKeratoconus"
-                    @onclick="@(() => eye.IsKeratoconus = !eye.IsKeratoconus)">
-                Keratoconus
-            </button>
-            <button type="button"
-                    class="@($"toggle-chip {(eye.IsArgosSosAL ? "active" : null)}")"
-                    aria-pressed="@eye.IsArgosSosAL"
-                    @onclick="@(() => eye.IsArgosSosAL = !eye.IsArgosSosAL)">
-                Argos (SoS) AL
-            </button>
-            @if (!eye.IsPostLvcRk)
-            {
-                <button type="button"
-                        class="toggle-chip"
-                        aria-pressed="false"
-                        @onclick="@(() => {
-                            eye.IsPostLvcRk = true;
-                            eye.PostLvcRkType = "M-LVC";
-                        })">
-                    Post LVC/RK
-                </button>
-            }
-            else
-            {
-                <div class="compound-chip active">
+        <div class="eye-body @(eye.IsEnabled ? null : "disabled")">
+            <div class="toggle-chip-row">
+                @if (!eye.IsPostLvcRk)
+                {
                     <button type="button"
-                            class="compound-chip-toggle"
-                            aria-pressed="true"
+                            class="toggle-chip"
+                            aria-pressed="false"
                             @onclick="@(() => {
-                                eye.IsPostLvcRk = false;
-                                eye.PostLvcRkType = string.Empty;
+                                eye.IsPostLvcRk = true;
+                                eye.PostLvcRkType = "M-LVC";
                             })">
                         Post LVC/RK
                     </button>
-                    <div class="compound-chip-options" role="group" aria-label="Post LVC/RK subtype">
-                        @foreach (var option in PostLvcRkOptions)
-                        {
-                            <button type="button"
-                                    class="@($"compound-chip-option {(eye.PostLvcRkType == option ? "active" : null)}")"
-                                    aria-pressed="@(eye.PostLvcRkType == option)"
-                                    @onclick="@(() => eye.PostLvcRkType = option)">
-                                @option
-                            </button>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-
-        <div class="measurement-grid">
-            @MiniField(eye.AL)
-            @MiniField(eye.ACD)
-            @MiniField(eye.LT)
-            @MiniSelect("n", eye.Index, value => eye.Index = value, IndexOptions)
-            @MiniField(eye.K1)
-            @MiniField(eye.K2)
-            @MiniField(eye.CCT)
-            @MiniField(eye.WTW)
-            <div class="mini-field-placeholder" aria-hidden="true"></div>
-
-            @MiniSelect("IOL Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
-            @MiniSelect("IOL Model", eye.Iol, value => eye.Iol = value, IolOptions)
-            @MiniText("Target Refraction", eye.TargetRefraction, value => eye.TargetRefraction = value)
-        </div>
-
-        <div class="constants-grid">
-            @foreach (var item in Constants)
-            {
-                <div class="constant-row">
-                    <div class="constant-field">
-                        <div class="constant-label">@item.Label</div>
-                        <div class="constant-value-row">
-                            <div class="constant-value @(string.IsNullOrWhiteSpace(item.Value) ? "empty" : null)">
-                                @(string.IsNullOrWhiteSpace(item.Value) ? "–" : item.Value)
-                            </div>
-
-                            @if (!string.IsNullOrWhiteSpace(item.Value))
+                }
+                else
+                {
+                    <div class="compound-chip active">
+                        <button type="button"
+                                class="compound-chip-toggle"
+                                aria-pressed="true"
+                                @onclick="@(() => {
+                                    eye.IsPostLvcRk = false;
+                                    eye.PostLvcRkType = string.Empty;
+                                })">
+                            Post LVC/RK
+                        </button>
+                        <div class="compound-chip-options" role="group" aria-label="Post LVC/RK subtype">
+                            @foreach (var option in PostLvcRkOptions)
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                               Size="Size.Small"
-                                               Class="field-clear-button"
-                                               OnClick="@(() => item.Value = string.Empty)" />
+                                <button type="button"
+                                        class="@($"compound-chip-option {(eye.PostLvcRkType == option ? "active" : null)}")"
+                                        aria-pressed="@(eye.PostLvcRkType == option)"
+                                        @onclick="@(() => eye.PostLvcRkType = option)">
+                                    @option
+                                </button>
                             }
                         </div>
                     </div>
+                }
+                <button type="button"
+                        class="@($"toggle-chip {(eye.IsKeratoconus ? "active" : null)}")"
+                        aria-pressed="@eye.IsKeratoconus"
+                        @onclick="@(() => eye.IsKeratoconus = !eye.IsKeratoconus)">
+                    KC
+                </button>
+                <button type="button"
+                        class="@($"toggle-chip {(eye.IsArgosSosAL ? "active" : null)}")"
+                        aria-pressed="@eye.IsArgosSosAL"
+                        @onclick="@(() => eye.IsArgosSosAL = !eye.IsArgosSosAL)">
+                    SoS AL
+                </button>
+            </div>
 
-                    <MudIconButton Icon="@Icons.Material.Outlined.Info"
-                                   Size="Size.Small"
-                                   Color="Color.Secondary" />
-                </div>
-            }
-        </div>
+            <div class="measurement-grid">
+                @MiniField(eye.AL)
+                @MiniField(eye.ACD)
+                @MiniField(eye.LT)
+                @MiniField(eye.CCT)
+                @MiniField(eye.WTW)
+                @MiniSelect("n", eye.Index, value => eye.Index = value, IndexOptions)
+                @MiniField(eye.K1)
+                @MiniField(eye.K2)
+                <div class="mini-field-placeholder" aria-hidden="true"></div>
 
-        <div class="eye-nav @(forward ? "forward" : "back")">
-            <MudIconButton Icon="@(forward ? Icons.Material.Filled.ChevronRight : Icons.Material.Filled.ChevronLeft)"
-                           Size="Size.Small"
-                           Class="chevron-button" />
+                @MiniSelect("IOL Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
+                @MiniSelect("IOL Model", eye.Iol, value => eye.Iol = value, IolOptions)
+                @MiniText("Target Refraction", eye.TargetRefraction, value => eye.TargetRefraction = value)
+            </div>
+
+            <div class="constants-grid">
+                @foreach (var item in Constants)
+                {
+                    <div class="constant-row">
+                        <div class="constant-field">
+                            <div class="constant-label">@item.Label</div>
+                            <div class="constant-value-row">
+                                <div class="constant-value @(string.IsNullOrWhiteSpace(item.Value) ? "empty" : null)">
+                                    @(string.IsNullOrWhiteSpace(item.Value) ? "–" : item.Value)
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Value))
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                   Size="Size.Small"
+                                                   Class="field-clear-button"
+                                                   OnClick="@(() => item.Value = string.Empty)" />
+                                }
+                            </div>
+                        </div>
+
+                        <MudIconButton Icon="@Icons.Material.Outlined.Info"
+                                       Size="Size.Small"
+                                       Color="Color.Secondary" />
+                    </div>
+                }
+            </div>
+
+            <div class="eye-nav @(forward ? "forward" : "back")">
+                <MudIconButton Icon="@(forward ? Icons.Material.Filled.ChevronRight : Icons.Material.Filled.ChevronLeft)"
+                               Size="Size.Small"
+                               Class="chevron-button" />
+            </div>
         </div>
     </MudPaper>;
-
-    public class CalculatorOption
-    {
-        public string Name { get; set; }
-        public bool Enabled { get; set; } = true;
-
-        public CalculatorOption(string name)
-        {
-            Name = name;
-        }
-    }
 
     public class ConstantItem
     {
@@ -769,6 +733,7 @@
         public EyeField WTW { get; } = new("WTW", "mm");
         public EyeField K1 { get; } = new("K1", "D");
         public EyeField K2 { get; } = new("K2", "D");
+        public bool IsEnabled { get; set; } = true;
         public bool IsToric { get; set; }
         public bool IsKeratoconus { get; set; }
         public bool IsArgosSosAL { get; set; }
