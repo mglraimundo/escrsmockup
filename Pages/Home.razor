@@ -130,7 +130,8 @@
                                           Class="history-search" />
 
                             <div class="history-strip">
-                                <div class="history-list">
+                                <div class="history-list"
+                                     onscroll="const left=this.parentElement.querySelector('.history-scroll-button.left'); const right=this.parentElement.querySelector('.history-scroll-button.right'); left?.classList.toggle('hidden', this.scrollLeft <= 2); right?.classList.toggle('hidden', this.scrollLeft + this.clientWidth >= this.scrollWidth - 2);">
                                     @foreach (var item in FilteredHistory)
                                     {
                                         <button type="button"
@@ -146,7 +147,7 @@
                                     }
                                 </div>
                                 <button type="button"
-                                        class="history-scroll-button left"
+                                        class="history-scroll-button left hidden"
                                         aria-label="Scroll history left"
                                         onclick="this.parentElement.querySelector('.history-list').scrollBy({ left: -220, behavior: 'smooth' })">
                                     &lt;
@@ -178,13 +179,15 @@
                         <div class="biomapi-result">
                             <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Medium" />
                             <div class="biomapi-result-meta">
+                                <strong>BiomPIN:</strong>
+                                <span>@_lastBiomApiLoad.BiomPin</span>
                                 @if (_lastBiomApiLoad.SourceLabel == "File")
                                 {
                                     <strong>File:</strong>
                                     <span>@_lastBiomApiLoad.SourceValue</span>
                                 }
-                                <strong>BiomPIN:</strong>
-                                <span>@_lastBiomApiLoad.BiomPin</span>
+                                <strong>Device:</strong>
+                                <span>@_lastBiomApiLoad.Device</span>
                                 <strong>Expires:</strong>
                                 <span>@_lastBiomApiLoad.Expires</span>
                             </div>
@@ -200,7 +203,7 @@
 
                 <div class="biomapi-warning">
                     <MudIcon Icon="@Icons.Material.Filled.Science" Size="Size.Small" />
-                    <span>BiomAPI is technology preview. Please double-check all extracted values.</span>
+                    <span>BiomAPI is in technology preview. Please double-check all extracted values.</span>
                 </div>
             }
         </MudPaper>
@@ -378,7 +381,7 @@
     private EyeModel LeftEye { get; } = new();
 
     private bool UseCommaDecimalFormat;
-    private bool _isBiomApiExpanded;
+    private bool _isBiomApiExpanded = true;
     private int _activeBiomApiTab;
     private bool _isBiomApiLoading;
     private string? _selectedUploadFile;
@@ -461,7 +464,7 @@
         await Task.Delay(450);
 
         ApplySampleBiometry();
-        _lastBiomApiLoad = new BiomLoadSummary(sourceLabel, sourceValue, pin ?? sourceValue, "6/5/2026 10:30 PM");
+        _lastBiomApiLoad = new BiomLoadSummary(sourceLabel, sourceValue, pin ?? sourceValue, "Argos", "6/5/2026 10:30 PM");
 
         if (!string.IsNullOrWhiteSpace(pin))
         {
@@ -585,23 +588,40 @@
         </MudSelect>
     </div>;
 
-    private RenderFragment EyePanel(string eyeCode, string side, EyeModel eye, bool forward) => @<MudPaper Elevation="0" Class="eye-card">
+    private RenderFragment ToricSegment(EyeModel eye) => @<div class="toric-segment" role="group" aria-label="Toric mode">
+        <button type="button"
+                class="@($"toric-segment-button {(!eye.IsToric ? "active" : null)}")"
+                aria-pressed="@(!eye.IsToric)"
+                @onclick="@(() => eye.IsToric = false)">
+            Non-toric
+        </button>
+        <button type="button"
+                class="@($"toric-segment-button {(eye.IsToric ? "active" : null)}")"
+                aria-pressed="@eye.IsToric"
+                @onclick="@(() => eye.IsToric = true)">
+            Toric
+        </button>
+    </div>;
+
+    private RenderFragment EyePanel(string eyeCode, string side, EyeModel eye, bool forward) => @<MudPaper Elevation="0" Class="@($"eye-card {(forward ? "od-card" : "os-card")}")">
         <div class="eye-header">
             <div class="eye-badge">
-                <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
-                <span>@eyeCode (@side)</span>
+                @if (forward)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
+                    <span>@eyeCode (@side)</span>
+                }
+                else
+                {
+                    <span>@eyeCode (@side)</span>
+                    <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
+                }
             </div>
-        </div>
 
-        <div class="eye-float-anchor" aria-hidden="true">
-            <div class="eye-float-badge">
-                <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
-                <span>@eyeCode</span>
-            </div>
+            @ToricSegment(eye)
         </div>
 
         <div class="switch-row">
-            <MudSwitch T="bool" Label="Toric" Color="Color.Primary" Class="switch-item" />
             <MudSwitch T="bool" Label="Keratoconus" Color="Color.Primary" Class="switch-item" />
             <MudSwitch T="bool" Label="Argos (SoS) AL" Color="Color.Primary" Class="switch-item" />
             <MudSwitch T="bool" Label="Post LASIK/PRK/RK" Color="Color.Primary" Class="switch-item" />
@@ -611,16 +631,16 @@
             @MiniField(eye.AL)
             @MiniField(eye.ACD)
             @MiniField(eye.LT)
-            @MiniField(eye.CCT)
-            @MiniField(eye.WTW)
+            @MiniSelect("n", eye.Index, value => eye.Index = value, IndexOptions)
             @MiniField(eye.K1)
             @MiniField(eye.K2)
+            @MiniField(eye.CCT)
+            @MiniField(eye.WTW)
+            <div class="mini-field-placeholder" aria-hidden="true"></div>
 
-            @MiniSelect("Index*", eye.Index, value => eye.Index = value, IndexOptions)
+            @MiniSelect("IOL Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
+            @MiniSelect("IOL Model", eye.Iol, value => eye.Iol = value, IolOptions)
             @MiniText("Target Refraction", eye.TargetRefraction, value => eye.TargetRefraction = value)
-
-            @MiniSelect("Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
-            @MiniSelect("Select IOL", eye.Iol, value => eye.Iol = value, IolOptions)
         </div>
 
         <div class="constants-grid">
@@ -683,7 +703,7 @@
 
     public record BiomHistoryItem(string Initials, string PatientId, string Pin, string Expires);
 
-    public record BiomLoadSummary(string SourceLabel, string SourceValue, string BiomPin, string Expires);
+    public record BiomLoadSummary(string SourceLabel, string SourceValue, string BiomPin, string Device, string Expires);
 
     public class PatientModel
     {
@@ -703,6 +723,7 @@
         public EyeField WTW { get; } = new("WTW", "mm");
         public EyeField K1 { get; } = new("K1", "D");
         public EyeField K2 { get; } = new("K2", "D");
+        public bool IsToric { get; set; }
         public string Index { get; set; } = "1.3375";
         public string TargetRefraction { get; set; } = "-0.25";
         public string Manufacturer { get; set; } = "Alcon";
