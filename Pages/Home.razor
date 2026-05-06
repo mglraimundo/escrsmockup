@@ -3,6 +3,7 @@
 @using MudBlazor
 @implements IDisposable
 @inject IJSRuntime JS
+@inject IDialogService DialogService
 
 <PageTitle>ESCRS IOL Calculator Mockup</PageTitle>
 
@@ -28,7 +29,7 @@
                 DEC (@(UseCommaDecimalFormat ? "0,00" : "0.00"))
             </MudButton>
 
-            <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" />
+            <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" OnClick="OpenSettingsDialogAsync" />
         </div>
     </MudPaper>
 
@@ -342,12 +343,24 @@
 
     private List<ConstantItem> Constants = new()
     {
-        new("Barrett A-Constant", "119.3537"),
-        new("Cooke A-Constant", "119.3556"),
-        new("EVO A-Constant", "119.1"),
-        new("Hoffer® pACD", "5.76"),
-        new("Kane A-Constant", "119.3537"),
-        new("Pearl DGS A-Constant", "119.3537")
+        new("Barrett A-Constant", "119.3537", "Barrett UII"),
+        new("Cooke A-Constant", "119.3556", "Cooke K6"),
+        new("EVO A-Constant", "119.1", "EVO"),
+        new("Hill-RBF A-Constant", "119.3537", "Hill-RBF"),
+        new("Hoffer® pACD", "5.76", "Hoffer QST"),
+        new("Kane A-Constant", "119.3537", "Kane"),
+        new("Pearl DGS A-Constant", "119.3537", "Pearl DGS")
+    };
+
+    private List<FormulaConfig> FormulaConfigs = new()
+    {
+        new("Barrett UII", true, true, true, true, true, true, true, false),
+        new("Cooke K6", true, true, false, true, true, true, false, true),
+        new("EVO", true, true, true, true, true, true, false, true),
+        new("Hill-RBF", true, true, false, false, false, false, false, false),
+        new("Hoffer QST", true, true, true, true, false, false, false, false),
+        new("Kane", true, true, true, false, false, false, true, false),
+        new("Pearl DGS", true, true, true, true, true, true, false, true)
     };
 
     private PatientModel Patient { get; } = new();
@@ -405,6 +418,27 @@
     private void ToggleDecimalFormat()
     {
         UseCommaDecimalFormat = !UseCommaDecimalFormat;
+    }
+
+    private async Task OpenSettingsDialogAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            { "FormulaConfigs", FormulaConfigs }
+        };
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false } && result.Data is List<FormulaConfig> updatedConfigs)
+        {
+            FormulaConfigs = updatedConfigs;
+        }
     }
 
     private async Task LoadFromUploadAsync()
@@ -704,7 +738,7 @@
             </div>
 
             <div class="constants-grid">
-                @foreach (var item in Constants)
+                @foreach (var item in Constants.Where(c => FormulaConfigs.Any(f => f.Name == c.FormulaName && f.IsEnabled)))
                 {
                     <div class="constant-row">
                         <div class="constant-field">
@@ -741,14 +775,42 @@
 
     public class ConstantItem
     {
-        public ConstantItem(string label, string value)
+        public ConstantItem(string label, string value, string formulaName)
         {
             Label = label;
             Value = value;
+            FormulaName = formulaName;
         }
 
         public string Label { get; }
         public string Value { get; set; }
+        public string FormulaName { get; }
+    }
+
+    public class FormulaConfig
+    {
+        public FormulaConfig(string name, bool isEnabled, bool nonToric, bool toric, bool mLvc, bool hLvc, bool rk, bool kc, bool sosAl)
+        {
+            Name = name;
+            IsEnabled = isEnabled;
+            NonToric = nonToric;
+            Toric = toric;
+            MLvc = mLvc;
+            HLvc = hLvc;
+            Rk = rk;
+            Kc = kc;
+            SosAl = sosAl;
+        }
+
+        public string Name { get; }
+        public bool IsEnabled { get; set; }
+        public bool NonToric { get; }
+        public bool Toric { get; }
+        public bool MLvc { get; }
+        public bool HLvc { get; }
+        public bool Rk { get; }
+        public bool Kc { get; }
+        public bool SosAl { get; }
     }
 
     public record BiomHistoryItem(string Initials, string PatientId, string Pin, string Expires);

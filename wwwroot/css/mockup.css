@@ -1091,14 +1091,14 @@ body {
 }
 
 .reset-button {
-    background: #eef1f7 !important;
+    background: #ffffff !important;
     color: #3b4663 !important;
     border: 1px solid #d9deea;
     box-shadow: none;
 }
 
 .reset-button:hover {
-    background: #e5e9f2 !important;
+    background: #f5f7fb !important;
     border-color: #cfd6e5;
     box-shadow: none !important;
 }
@@ -1144,6 +1144,95 @@ body {
 
 .mud-input-control {
     margin-top: 0 !important;
+}
+
+.settings-dialog .mud-dialog-actions {
+    padding: 16px 24px 24px;
+}
+
+.settings-dialog-content {
+    padding: 4px 8px 8px;
+}
+
+.settings-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 14px;
+    color: var(--text-main);
+}
+
+.formula-table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 5px 18px rgba(26, 39, 72, 0.055);
+}
+
+.formula-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    min-width: 640px;
+}
+
+.formula-table thead th {
+    text-align: center;
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    background: var(--field-bg);
+}
+
+.formula-table tbody td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.formula-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.col-enabled {
+    width: 64px;
+    text-align: center;
+}
+
+.col-enabled .mud-switch {
+    margin: 0;
+}
+
+.col-formula {
+    min-width: 120px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.col-capability {
+    width: 64px;
+    text-align: center;
+}
+
+.capability-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.capability-dot.supported {
+    background: var(--primary);
+}
+
+.capability-dot.unsupported {
+    background: var(--border);
 }
 
 @media (min-width: 768px) {

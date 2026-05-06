@@ -1,0 +1,95 @@
+@using MudBlazor
+
+<MudDialog Class="settings-dialog">
+    <DialogContent>
+        <div class="settings-dialog-content">
+            <h3 class="settings-section-title">Formulas</h3>
+            <div class="formula-table-wrapper">
+                <table class="formula-table">
+                    <thead>
+                        <tr>
+                            <th class="col-enabled"></th>
+                            <th class="col-formula"></th>
+                            <th class="col-capability">Non-toric</th>
+                            <th class="col-capability">Toric</th>
+                            <th class="col-capability">M-LVC</th>
+                            <th class="col-capability">H-LVC</th>
+                            <th class="col-capability">RK</th>
+                            <th class="col-capability">KC</th>
+                            <th class="col-capability">SoS AL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var formula in _workingConfigs)
+                        {
+                            <tr>
+                                <td class="col-enabled">
+                                    <MudSwitch T="bool"
+                                               @bind-Value="formula.IsEnabled"
+                                               Color="Color.Primary" />
+                                </td>
+                                <td class="col-formula">@formula.Name</td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.NonToric ? "supported" : "unsupported")"></span>
+                                </td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.Toric ? "supported" : "unsupported")"></span>
+                                </td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.MLvc ? "supported" : "unsupported")"></span>
+                                </td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.HLvc ? "supported" : "unsupported")"></span>
+                                </td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.Rk ? "supported" : "unsupported")"></span>
+                                </td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.Kc ? "supported" : "unsupported")"></span>
+                                </td>
+                                <td class="col-capability">
+                                    <span class="capability-dot @(formula.SosAl ? "supported" : "unsupported")"></span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Reset">Reset</MudButton>
+        <div style="flex-grow: 1;"></div>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public List<Home.FormulaConfig> FormulaConfigs { get; set; } = default!;
+
+    private List<Home.FormulaConfig> _workingConfigs = new();
+
+    protected override void OnParametersSet()
+    {
+        _workingConfigs = FormulaConfigs
+            .Select(f => new Home.FormulaConfig(f.Name, f.IsEnabled, f.NonToric, f.Toric, f.MLvc, f.HLvc, f.Rk, f.Kc, f.SosAl))
+            .ToList();
+    }
+
+    private void Reset()
+    {
+        foreach (var formula in _workingConfigs)
+        {
+            formula.IsEnabled = true;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(_workingConfigs));
+}
