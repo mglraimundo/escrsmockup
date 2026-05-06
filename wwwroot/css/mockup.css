@@ -130,32 +130,59 @@ body {
 .biomapi-card {
     padding: 14px 18px;
     overflow: hidden;
+    border-color: #d7d1f8;
+    box-shadow: 0 5px 18px rgba(26, 39, 72, 0.055);
 }
 
 .biomapi-card.collapsed {
     padding-block: 12px;
+    border-color: #c9c0f4;
+    box-shadow: 0 0 0 1px rgba(81, 64, 217, 0.08), 0 5px 16px rgba(26, 39, 72, 0.055);
+}
+
+.biomapi-card.expanded {
+    border-color: #d7d1f8;
 }
 
 .biomapi-card-header {
-    width: 100%;
+    width: calc(100% + 36px);
+    box-sizing: border-box;
     border: 0;
-    background: transparent;
+    background: #f2f4f8;
     color: var(--text-main);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 0;
+    margin: -14px -18px 0 -18px;
+    padding: 10px 14px;
+    border-radius: 10px 10px 0 0;
     text-align: left;
     cursor: pointer;
 }
 
-.biomapi-card-header .section-label {
-    margin-bottom: 0;
+.biomapi-card.collapsed .biomapi-card-header {
+    margin: -12px -18px;
+    border-radius: 10px;
 }
 
-.biomapi-card-header:hover .section-label {
+.biomapi-card-header:hover .biomapi-header-label {
     color: var(--primary);
+}
+
+.biomapi-header-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.biomapi-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    border-radius: 4px;
 }
 
 .biomapi-tabs {
@@ -203,6 +230,19 @@ body {
 
 .biomapi-panel {
     padding: 0;
+}
+
+.biomapi-placeholder {
+    min-width: 0;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.biomapi-active-panel {
+    min-width: 0;
 }
 
 .upload-panel {
@@ -395,13 +435,12 @@ body {
     line-height: 1.25;
 }
 
-.biomapi-alert,
-.biomapi-warning {
-    margin-top: 8px;
+.biomapi-alert {
+    margin: 4px 0 0;
 }
 
 .biomapi-result-row {
-    margin-top: 8px;
+    margin-top: 4px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -422,9 +461,25 @@ body {
 .biomapi-result-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 14px;
+    gap: 2px 6px;
+    align-items: center;
     color: #0b6b43;
     font-size: 0.82rem;
+}
+
+.biomapi-pin-value {
+    font-weight: 700;
+}
+
+.biomapi-copy-button {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 2px !important;
+    margin-inline: -2px 4px !important;
+}
+
+.biomapi-copy-button .mud-icon-root {
+    font-size: 0.95rem !important;
 }
 
 .biomapi-result-link {
@@ -432,20 +487,36 @@ body {
     justify-self: end;
     white-space: nowrap;
     margin: 0;
+    min-height: 34px;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    border-color: #b9c8f3 !important;
+    box-shadow: 0 1px 3px rgba(26, 39, 72, 0.08) !important;
+}
+
+.biomapi-result-link:hover {
+    background: #f4f7ff !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 5px 12px rgba(81, 64, 217, 0.12) !important;
 }
 
 .biomapi-warning {
+    margin-top: 8px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 8px;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 7px;
     border: 1px solid #edd38c;
     background: #fff9e8;
     color: #7b4a00;
-    font-size: 0.84rem;
+    font-size: 0.74rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.15;
+}
+
+.biomapi-warning .mud-icon-root {
+    font-size: 1rem;
 }
 
 .patient-strip {
@@ -1076,6 +1147,55 @@ body {
     margin-top: 0 !important;
 }
 
+@media (min-width: 768px) {
+    .biomapi-tabs {
+        display: grid;
+        grid-template-columns: 132px 1fr;
+        gap: 16px;
+        align-items: start;
+    }
+
+    .biomapi-tab-list {
+        display: flex;
+        flex-direction: column;
+        grid-template-columns: none;
+        min-height: auto;
+        padding: 4px;
+        gap: 3px;
+    }
+
+    .biomapi-tab-button {
+        text-align: left;
+        padding: 8px 12px;
+        min-height: 36px;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 767px) {
+    .biompin-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .biompin-actions,
+    .biomapi-load-button,
+    .biomapi-result-link {
+        width: 100%;
+    }
+
+    .biomapi-result-row {
+        grid-template-columns: 1fr;
+    }
+
+    .biomapi-result-link {
+        justify-self: stretch;
+    }
+
+    .biomapi-result {
+        align-items: flex-start;
+    }
+}
+
 @media (max-width: 960px) {
     .topbar {
         height: 58px;
@@ -1128,6 +1248,15 @@ body {
 
     .biomapi-card {
         padding: 12px;
+    }
+
+    .biomapi-card-header {
+        width: calc(100% + 24px);
+        margin: -12px -12px 0;
+    }
+
+    .biomapi-card.collapsed .biomapi-card-header {
+        margin: -12px;
     }
 
     .biomapi-tab-button {

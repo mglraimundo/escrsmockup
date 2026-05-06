@@ -2,6 +2,7 @@
 @using System.Text.RegularExpressions
 @using MudBlazor
 @implements IDisposable
+@inject IJSRuntime JS
 
 <PageTitle>ESCRS IOL Calculator Mockup</PageTitle>
 
@@ -38,9 +39,12 @@
                     class="biomapi-card-header"
                     aria-expanded="@_isBiomApiExpanded"
                     @onclick="ToggleBiomApiPanel">
-                <MudText Typo="Typo.caption" Class="section-label">
-                    Load Biometry using BiomAPI
-                </MudText>
+                <span class="biomapi-header-label">
+                    <img class="biomapi-logo"
+                         src="assets/biomapi.png"
+                         alt="" />
+                    <span>BiomAPI</span>
+                </span>
                 <MudIcon Icon="@(_isBiomApiExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
                          Size="Size.Small" />
             </button>
@@ -54,127 +58,134 @@
                         @BiomApiTabButton("History", 2)
                     </div>
 
-                    @if (_activeBiomApiTab == 0)
-                    {
-                        <div class="biomapi-panel upload-panel">
-                            <button type="button"
-                                    class="upload-dropzone"
-                                    @onclick="LoadFromUploadAsync">
-                                <MudIcon Icon="@Icons.Material.Filled.UploadFile" Size="Size.Small" />
-                                <span class="upload-title">
-                                    @(_selectedUploadFile ?? "Browse PDF, image or JSON")
-                                </span>
-                            </button>
+                    <div class="biomapi-placeholder @(HasVisibleBiomApiStatus ? "has-status" : null)">
+                        <div class="biomapi-active-panel">
+                            @if (_activeBiomApiTab == 0)
+                            {
+                                <div class="biomapi-panel upload-panel">
+                                    <button type="button"
+                                            class="upload-dropzone"
+                                            @onclick="LoadFromUploadAsync">
+                                        <MudIcon Icon="@Icons.Material.Filled.UploadFile" Size="Size.Small" />
+                                        <span class="upload-title">
+                                            @(_selectedUploadFile ?? "Browse PDF, image or JSON")
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+
+                            @if (_activeBiomApiTab == 1)
+                            {
+                                <div class="biomapi-panel biompin-panel">
+                                    <MudTextField T="string"
+                                                  @bind-Value="_biomPinInput"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Placeholder="BiomPIN or BiomAPI URL"
+                                                  Adornment="Adornment.Start"
+                                                  AdornmentIcon="@Icons.Material.Filled.Key" />
+
+                                    <div class="biompin-actions">
+                                        <MudButton Variant="Variant.Outlined"
+                                                   Color="Color.Default"
+                                                   StartIcon="@Icons.Material.Filled.Download"
+                                                   Disabled="_isBiomApiLoading"
+                                                   Class="biomapi-load-button"
+                                                   OnClick="LoadFromBiomPinAsync">
+                                            @(_isBiomApiLoading ? "Retrieving" : "Load")
+                                        </MudButton>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (_activeBiomApiTab == 2)
+                            {
+                                <div class="biomapi-panel history-panel">
+                                    <MudTextField T="string"
+                                                  @bind-Value="_historySearch"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Placeholder="Search by name or ID"
+                                                  Adornment="Adornment.Start"
+                                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                                  Class="history-search" />
+
+                                    <div class="history-strip">
+                                        <div class="history-list"
+                                             onscroll="const left=this.parentElement.querySelector('.history-scroll-button.left'); const right=this.parentElement.querySelector('.history-scroll-button.right'); left?.classList.toggle('hidden', this.scrollLeft <= 2); right?.classList.toggle('hidden', this.scrollLeft + this.clientWidth >= this.scrollWidth - 2);">
+                                            @foreach (var item in FilteredHistory)
+                                            {
+                                                <button type="button"
+                                                        class="history-item"
+                                                        @onclick="@(() => LoadFromHistoryAsync(item))">
+                                                    <span>
+                                                        <strong>@item.Initials</strong>
+                                                        <span class="history-muted">(@item.PatientId)</span>
+                                                    </span>
+                                                    <span class="history-pin">@item.Pin</span>
+                                                    <span class="history-muted">Exp @item.Expires</span>
+                                                </button>
+                                            }
+                                        </div>
+                                        <button type="button"
+                                                class="history-scroll-button left hidden"
+                                                aria-label="Scroll history left"
+                                                onclick="this.parentElement.querySelector('.history-list').scrollBy({ left: -220, behavior: 'smooth' })">
+                                            &lt;
+                                        </button>
+                                        <button type="button"
+                                                class="history-scroll-button right"
+                                                aria-label="Scroll history right"
+                                                onclick="this.parentElement.querySelector('.history-list').scrollBy({ left: 220, behavior: 'smooth' })">
+                                            &gt;
+                                        </button>
+                                    </div>
+                                </div>
+                            }
                         </div>
-                    }
+                        @if (ShowBiomApiDetails && !string.IsNullOrWhiteSpace(_biomApiError))
+                        {
+                            <MudAlert Severity="Severity.Error"
+                                      Variant="Variant.Filled"
+                                      Dense="true"
+                                      Class="biomapi-alert">
+                                @_biomApiError
+                            </MudAlert>
+                        }
 
-                    @if (_activeBiomApiTab == 1)
-                    {
-                        <div class="biomapi-panel biompin-panel">
-                            <MudTextField T="string"
-                                          @bind-Value="_biomPinInput"
-                                          Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          Placeholder="BiomPIN or BiomAPI URL"
-                                          Adornment="Adornment.Start"
-                                          AdornmentIcon="@Icons.Material.Filled.Key" />
-
-                            <div class="biompin-actions">
+                        @if (ShowBiomApiDetails && _lastBiomApiLoad is not null)
+                        {
+                            <div class="biomapi-result-row">
+                                <div class="biomapi-result">
+                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Medium" />
+                                    <div class="biomapi-result-meta">
+                                        <strong>BiomPIN:</strong>
+                                        <span class="biomapi-pin-value">@_lastBiomApiLoad.BiomPin</span>
+                                        <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                                                       Size="Size.Small"
+                                                       Color="Color.Success"
+                                                       Class="biomapi-copy-button"
+                                                       aria-label="Copy BiomPIN"
+                                                       OnClick="CopyLastBiomPinAsync" />
+                                        @if (_lastBiomApiLoad.SourceLabel == "File")
+                                        {
+                                            <strong>File:</strong>
+                                            <span>@_lastBiomApiLoad.SourceValue</span>
+                                        }
+                                        <strong>Expires:</strong>
+                                        <span>@_lastBiomApiLoad.Expires</span>
+                                    </div>
+                                </div>
                                 <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Default"
-                                           StartIcon="@Icons.Material.Filled.Download"
-                                           Disabled="_isBiomApiLoading"
-                                           Class="biomapi-load-button"
-                                           OnClick="LoadFromBiomPinAsync">
-                                    @(_isBiomApiLoading ? "Retrieving" : "Load")
+                                           Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.OpenInNew"
+                                           Class="biomapi-result-link">
+                                    Open in BiomAPI
                                 </MudButton>
                             </div>
-                        </div>
-                    }
-
-                    @if (_activeBiomApiTab == 2)
-                    {
-                        <div class="biomapi-panel history-panel">
-                            <MudTextField T="string"
-                                          @bind-Value="_historySearch"
-                                          Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          Placeholder="Search by name or ID"
-                                          Adornment="Adornment.Start"
-                                          AdornmentIcon="@Icons.Material.Filled.Search"
-                                          Class="history-search" />
-
-                            <div class="history-strip">
-                                <div class="history-list"
-                                     onscroll="const left=this.parentElement.querySelector('.history-scroll-button.left'); const right=this.parentElement.querySelector('.history-scroll-button.right'); left?.classList.toggle('hidden', this.scrollLeft <= 2); right?.classList.toggle('hidden', this.scrollLeft + this.clientWidth >= this.scrollWidth - 2);">
-                                    @foreach (var item in FilteredHistory)
-                                    {
-                                        <button type="button"
-                                                class="history-item"
-                                                @onclick="@(() => LoadFromHistoryAsync(item))">
-                                            <span>
-                                                <strong>@item.Initials</strong>
-                                                <span class="history-muted">(@item.PatientId)</span>
-                                            </span>
-                                            <span class="history-pin">@item.Pin</span>
-                                            <span class="history-muted">Exp @item.Expires</span>
-                                        </button>
-                                    }
-                                </div>
-                                <button type="button"
-                                        class="history-scroll-button left hidden"
-                                        aria-label="Scroll history left"
-                                        onclick="this.parentElement.querySelector('.history-list').scrollBy({ left: -220, behavior: 'smooth' })">
-                                    &lt;
-                                </button>
-                                <button type="button"
-                                        class="history-scroll-button right"
-                                        aria-label="Scroll history right"
-                                        onclick="this.parentElement.querySelector('.history-list').scrollBy({ left: 220, behavior: 'smooth' })">
-                                    &gt;
-                                </button>
-                            </div>
-                        </div>
-                    }
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(_biomApiError))
-                {
-                    <MudAlert Severity="Severity.Error"
-                              Variant="Variant.Filled"
-                              Dense="true"
-                              Class="biomapi-alert">
-                        @_biomApiError
-                    </MudAlert>
-                }
-
-                @if (_lastBiomApiLoad is not null)
-                {
-                    <div class="biomapi-result-row">
-                        <div class="biomapi-result">
-                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Medium" />
-                            <div class="biomapi-result-meta">
-                                <strong>BiomPIN:</strong>
-                                <span>@_lastBiomApiLoad.BiomPin</span>
-                                @if (_lastBiomApiLoad.SourceLabel == "File")
-                                {
-                                    <strong>File:</strong>
-                                    <span>@_lastBiomApiLoad.SourceValue</span>
-                                }
-                                <strong>Device:</strong>
-                                <span>@_lastBiomApiLoad.Device</span>
-                                <strong>Expires:</strong>
-                                <span>@_lastBiomApiLoad.Expires</span>
-                            </div>
-                        </div>
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.OpenInNew"
-                                   Class="biomapi-result-link">
-                            Open in BiomAPI
-                        </MudButton>
+                        }
                     </div>
-                }
+                </div>
 
                 <div class="biomapi-warning">
                     <MudIcon Icon="@Icons.Material.Filled.Science" Size="Size.Small" />
@@ -359,16 +370,16 @@
 
     private List<BiomHistoryItem> BiomApiHistory { get; } = new()
     {
-        new("MMF", "10008711", "portion-stuff-635550", "6/5/2026 10:30 PM"),
-        new("JDD", "12345", "win-citizen-223986", "6/4/2026 5:10 PM"),
-        new("AR", "784209", "lunar-rocket-731904", "6/2/2026 9:00 AM"),
-        new("LS", "445901", "paper-orbit-482910", "5/31/2026 2:45 PM"),
-        new("TR", "663018", "silver-canal-119842", "5/30/2026 11:20 AM"),
-        new("NV", "908114", "garden-thread-774201", "5/29/2026 4:05 PM"),
-        new("HB", "551700", "quiet-harbor-390118", "5/27/2026 8:35 AM"),
-        new("CP", "102884", "signal-maple-820477", "5/26/2026 6:15 PM"),
-        new("EK", "770042", "ember-window-641002", "5/24/2026 1:50 PM"),
-        new("DM", "319870", "north-canvas-238776", "5/22/2026 10:10 AM")
+        new("MMF", "10008711", "portion-stuff-635550", "05/06/26 22:30"),
+        new("JDD", "12345", "win-citizen-223986", "04/06/26 17:10"),
+        new("AR", "784209", "lunar-rocket-731904", "02/06/26 09:00"),
+        new("LS", "445901", "paper-orbit-482910", "31/05/26 14:45"),
+        new("TR", "663018", "silver-canal-119842", "30/05/26 11:20"),
+        new("NV", "908114", "garden-thread-774201", "29/05/26 16:05"),
+        new("HB", "551700", "quiet-harbor-390118", "27/05/26 08:35"),
+        new("CP", "102884", "signal-maple-820477", "26/05/26 18:15"),
+        new("EK", "770042", "ember-window-641002", "24/05/26 13:50"),
+        new("DM", "319870", "north-canvas-238776", "22/05/26 10:10")
     };
 
     private IEnumerable<BiomHistoryItem> FilteredHistory
@@ -398,8 +409,17 @@
 
     private async Task LoadFromUploadAsync()
     {
-        _selectedUploadFile ??= "ulis-argos-1.pdf";
-        await SimulateLoadAsync("File", _selectedUploadFile, "portion-stuff-635550");
+        var selectedFile = _selectedUploadFile ?? "ulis-argos-1.pdf";
+        _selectedUploadFile = selectedFile;
+
+        try
+        {
+            await SimulateLoadAsync("File", selectedFile, "portion-stuff-635550");
+        }
+        finally
+        {
+            _selectedUploadFile = null;
+        }
     }
 
     private async Task LoadFromBiomPinAsync()
@@ -417,10 +437,15 @@
 
     private Task LoadFromHistoryAsync(BiomHistoryItem item)
     {
-        _activeBiomApiTab = 2;
+        _activeBiomApiTab = 1;
         _biomPinInput = item.Pin;
         return SimulateLoadAsync("BiomPIN", item.Pin, item.Pin);
     }
+
+    private bool ShowBiomApiDetails => _activeBiomApiTab != 2;
+
+    private bool HasVisibleBiomApiStatus =>
+        ShowBiomApiDetails && (!string.IsNullOrWhiteSpace(_biomApiError) || _lastBiomApiLoad is not null);
 
     private async Task SimulateLoadAsync(string sourceLabel, string sourceValue, string? pin)
     {
@@ -429,14 +454,29 @@
         await Task.Delay(450);
 
         ApplySampleBiometry();
-        _lastBiomApiLoad = new BiomLoadSummary(sourceLabel, sourceValue, pin ?? sourceValue, "Argos", "6/5/2026 10:30 PM");
+        _lastBiomApiLoad = new BiomLoadSummary(sourceLabel, sourceValue, pin ?? sourceValue, "05/06/26 22:30");
 
         if (!string.IsNullOrWhiteSpace(pin))
         {
-            UpsertHistory(new BiomHistoryItem(Patient.Initials, Patient.Id, pin, "6/5/2026 10:30 PM"));
+            UpsertHistory(new BiomHistoryItem(Patient.Initials, Patient.Id, pin, "05/06/26 22:30"));
         }
 
         _isBiomApiLoading = false;
+    }
+
+    private async Task CopyLastBiomPinAsync()
+    {
+        if (_lastBiomApiLoad is not null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", _lastBiomApiLoad.BiomPin);
+            }
+            catch (JSException)
+            {
+                // Clipboard access can be blocked by browser permissions; keep the mockup usable.
+            }
+        }
     }
 
     private void ApplySampleBiometry()
@@ -713,7 +753,7 @@
 
     public record BiomHistoryItem(string Initials, string PatientId, string Pin, string Expires);
 
-    public record BiomLoadSummary(string SourceLabel, string SourceValue, string BiomPin, string Device, string Expires);
+    public record BiomLoadSummary(string SourceLabel, string SourceValue, string BiomPin, string Expires);
 
     public class PatientModel
     {
