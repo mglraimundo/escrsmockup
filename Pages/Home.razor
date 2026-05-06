@@ -621,10 +621,56 @@
             @ToricSegment(eye)
         </div>
 
-        <div class="switch-row">
-            <MudSwitch T="bool" Label="Keratoconus" Color="Color.Primary" Class="switch-item" />
-            <MudSwitch T="bool" Label="Argos (SoS) AL" Color="Color.Primary" Class="switch-item" />
-            <MudSwitch T="bool" Label="Post LASIK/PRK/RK" Color="Color.Primary" Class="switch-item" />
+        <div class="toggle-chip-row">
+            <button type="button"
+                    class="@($"toggle-chip {(eye.IsKeratoconus ? "active" : null)}")"
+                    aria-pressed="@eye.IsKeratoconus"
+                    @onclick="@(() => eye.IsKeratoconus = !eye.IsKeratoconus)">
+                Keratoconus
+            </button>
+            <button type="button"
+                    class="@($"toggle-chip {(eye.IsArgosSosAL ? "active" : null)}")"
+                    aria-pressed="@eye.IsArgosSosAL"
+                    @onclick="@(() => eye.IsArgosSosAL = !eye.IsArgosSosAL)">
+                Argos (SoS) AL
+            </button>
+            @if (!eye.IsPostLvcRk)
+            {
+                <button type="button"
+                        class="toggle-chip"
+                        aria-pressed="false"
+                        @onclick="@(() => {
+                            eye.IsPostLvcRk = true;
+                            eye.PostLvcRkType = "M-LVC";
+                        })">
+                    Post LVC/RK
+                </button>
+            }
+            else
+            {
+                <div class="compound-chip active">
+                    <button type="button"
+                            class="compound-chip-toggle"
+                            aria-pressed="true"
+                            @onclick="@(() => {
+                                eye.IsPostLvcRk = false;
+                                eye.PostLvcRkType = string.Empty;
+                            })">
+                        Post LVC/RK
+                    </button>
+                    <div class="compound-chip-options" role="group" aria-label="Post LVC/RK subtype">
+                        @foreach (var option in PostLvcRkOptions)
+                        {
+                            <button type="button"
+                                    class="@($"compound-chip-option {(eye.PostLvcRkType == option ? "active" : null)}")"
+                                    aria-pressed="@(eye.PostLvcRkType == option)"
+                                    @onclick="@(() => eye.PostLvcRkType = option)">
+                                @option
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
         </div>
 
         <div class="measurement-grid">
@@ -724,6 +770,10 @@
         public EyeField K1 { get; } = new("K1", "D");
         public EyeField K2 { get; } = new("K2", "D");
         public bool IsToric { get; set; }
+        public bool IsKeratoconus { get; set; }
+        public bool IsArgosSosAL { get; set; }
+        public bool IsPostLvcRk { get; set; }
+        public string PostLvcRkType { get; set; } = "M-LVC";
         public string Index { get; set; } = "1.3375";
         public string TargetRefraction { get; set; } = "-0.25";
         public string Manufacturer { get; set; } = "Alcon";
@@ -746,4 +796,5 @@
     private static readonly string[] IndexOptions = { "1.3375", "1.3320" };
     private static readonly string[] ManufacturerOptions = { "---", "Alcon", "Bausch + Lomb", "Johnson & Johnson", "Zeiss" };
     private static readonly string[] IolOptions = { "---", "Clareon CNA0T0", "AcrySof IQ SN60WF", "enVista MX60", "Tecnis DCB00" };
+    private static readonly string[] PostLvcRkOptions = { "M-LVC", "H-LVC", "RK" };
 }

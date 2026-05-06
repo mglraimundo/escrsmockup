@@ -665,11 +665,11 @@ body {
     align-items: center;
     gap: 7px;
     padding: 6px 12px;
-    background: linear-gradient(135deg, #5b48e5, #3f2dc4);
-    color: white;
-    box-shadow: 0 6px 14px rgba(81, 64, 217, 0.18);
+    background: #f1f3f9;
+    color: #6b7293;
+    border: 1px solid #d8deea;
     font-size: 0.88rem;
-    font-weight: 900;
+    font-weight: 800;
 }
 
 .eye-card.os-card {
@@ -714,15 +714,156 @@ body {
     color: var(--text-main);
 }
 
-.switch-row {
+.toggle-chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 16px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 10px;
+    justify-content: flex-end;
 }
 
-.switch-item {
-    flex: 0 0 auto;
+.toggle-chip {
+    min-height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #f4f6fb;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 4px 12px;
+    white-space: nowrap;
+    transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.toggle-chip:hover {
+    background: #eceff6;
+    border-color: #c7d0eb;
+    color: var(--text-main);
+}
+
+.toggle-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 10px rgba(81, 64, 217, 0.22);
+}
+
+.compound-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #f4f6fb;
+    overflow: hidden;
+    transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.compound-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 4px 10px rgba(81, 64, 217, 0.22);
+}
+
+.compound-chip-toggle {
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 4px 12px;
+    white-space: nowrap;
+    transition: color 140ms ease;
+}
+
+.compound-chip.active .compound-chip-toggle {
+    color: white;
+    border-right: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.compound-chip-options {
+    display: flex;
+    gap: 2px;
+    padding: 2px 6px;
+}
+
+.compound-chip-option {
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.65);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1;
+    padding: 2px 8px;
+    white-space: nowrap;
+    transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.compound-chip-option.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.10);
+}
+
+.subtype-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-left: 8px;
+    border-left: 2px solid rgba(81, 64, 217, 0.12);
+}
+
+.subtype-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.subtype-segment {
+    display: inline-grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-width: 148px;
+    padding: 2px;
+    border: 1px solid #d8deea;
+    border-radius: 999px;
+    background: #f4f6fb;
+    gap: 2px;
+}
+
+.subtype-segment-button {
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1;
+    min-height: 22px;
+    padding: 0 8px;
+    white-space: nowrap;
+    transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.subtype-segment-button.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 2px 6px rgba(26, 39, 72, 0.10);
+}
+
+.subtype-segment-button:not(.active):hover {
+    color: var(--text-main);
 }
 
 .measurement-grid {
