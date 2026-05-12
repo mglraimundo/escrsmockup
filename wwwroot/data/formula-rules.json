@@ -1,0 +1,279 @@
+{
+  "fieldRanges": {
+    "AL": { "min": 18.0, "max": 35.0, "unit": "mm" },
+    "ACD": { "min": 1.5, "max": 6.0, "unit": "mm" },
+    "LT": { "min": 2.0, "max": 7.0, "unit": "mm" },
+    "CCT": { "min": 300.0, "max": 800.0, "unit": "um" },
+    "WTW": { "min": 8.0, "max": 15.0, "unit": "mm" },
+    "K1": { "min": 30.0, "max": 60.0, "unit": "D" },
+    "K2": { "min": 30.0, "max": 60.0, "unit": "D" },
+    "K1Axis": { "min": 0.0, "max": 180.0, "unit": "deg" },
+    "K2Axis": { "min": 0.0, "max": 180.0, "unit": "deg" },
+    "PK1": { "min": 30.0, "max": 60.0, "unit": "D" },
+    "PK2": { "min": 30.0, "max": 60.0, "unit": "D" },
+    "PK1Axis": { "min": 0.0, "max": 180.0, "unit": "deg" },
+    "PK2Axis": { "min": 0.0, "max": 180.0, "unit": "deg" },
+    "TK1": { "min": 30.0, "max": 60.0, "unit": "D" },
+    "TK2": { "min": 30.0, "max": 60.0, "unit": "D" },
+    "TK1Axis": { "min": 0.0, "max": 180.0, "unit": "deg" },
+    "TK2Axis": { "min": 0.0, "max": 180.0, "unit": "deg" },
+    "TargetRefraction": { "min": -10.0, "max": 5.0, "unit": "D" },
+    "BarrettAConstant": { "min": 100.0, "max": 130.0 },
+    "CookeAConstant": { "min": 100.0, "max": 130.0 },
+    "EvoAConstant": { "min": 100.0, "max": 130.0 },
+    "HillRbfAConstant": { "min": 100.0, "max": 130.0 },
+    "HofferPcd": { "min": 3.0, "max": 8.0 },
+    "KaneAConstant": { "min": 100.0, "max": 130.0 },
+    "PearlDgsAConstant": { "min": 100.0, "max": 130.0 }
+  },
+  "formulas": [
+    {
+      "id": "barrett-uii",
+      "name": "Barrett UII",
+      "enabled": true,
+      "constantField": "BarrettAConstant",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK", "IOLMaster700TK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK", "IOLMaster700TK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": false,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": true,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": true,
+          "sosAL": false
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "LT", "K1", "K2", "TargetRefraction", "BarrettAConstant" ],
+      "conditionalRequiredFields": [
+        { "when": { "toric": true }, "fields": [ "K1Axis", "K2Axis" ] },
+        { "when": { "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1", "PK2", "PkDevice" ] },
+        { "when": { "keratometryInputs": [ "IOLMaster700TK" ] }, "fields": [ "TK1", "TK2", "PkDevice" ] },
+        { "when": { "toric": true, "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1Axis", "PK2Axis" ] },
+        { "when": { "toric": true, "keratometryInputs": [ "IOLMaster700TK" ] }, "fields": [ "TK1Axis", "TK2Axis" ] }
+      ],
+      "rangeOverrides": {}
+    },
+    {
+      "id": "cooke-k6",
+      "name": "Cooke K6",
+      "enabled": true,
+      "constantField": "CookeAConstant",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": true
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "LT", "CCT", "K1", "K2", "TargetRefraction", "CookeAConstant" ],
+      "conditionalRequiredFields": [
+        { "when": { "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1", "PK2", "PkDevice" ] }
+      ],
+      "rangeOverrides": {}
+    },
+    {
+      "id": "evo",
+      "name": "EVO",
+      "enabled": true,
+      "constantField": "EvoAConstant",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": true
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": true
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "LT", "K1", "K2", "TargetRefraction", "EvoAConstant" ],
+      "conditionalRequiredFields": [
+        { "when": { "toric": true }, "fields": [ "K1Axis", "K2Axis" ] },
+        { "when": { "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1", "PK2", "PkDevice" ] },
+        { "when": { "toric": true, "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1Axis", "PK2Axis" ] }
+      ],
+      "rangeOverrides": {}
+    },
+    {
+      "id": "hill-rbf",
+      "name": "Hill-RBF",
+      "enabled": true,
+      "constantField": "HillRbfAConstant",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "K1", "K2", "TargetRefraction", "HillRbfAConstant" ],
+      "conditionalRequiredFields": [],
+      "rangeOverrides": {}
+    },
+    {
+      "id": "hoffer-qst",
+      "name": "Hoffer QST",
+      "enabled": true,
+      "constantField": "HofferPcd",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None", "MLvc" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "K1", "K2", "TargetRefraction", "HofferPcd" ],
+      "conditionalRequiredFields": [
+        { "when": { "toric": true }, "fields": [ "K1Axis", "K2Axis" ] },
+        { "when": { "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1", "PK2", "PkDevice" ] },
+        { "when": { "toric": true, "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1Axis", "PK2Axis" ] }
+      ],
+      "rangeOverrides": {
+        "AL": { "min": 16.0, "max": 26.0, "unit": "mm" }
+      }
+    },
+    {
+      "id": "kane",
+      "name": "Kane",
+      "enabled": true,
+      "constantField": "KaneAConstant",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": false,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": true,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": true,
+          "sosAL": false
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "K1", "K2", "TargetRefraction", "KaneAConstant" ],
+      "conditionalRequiredFields": [
+        { "when": { "toric": true }, "fields": [ "K1Axis", "K2Axis" ] }
+      ],
+      "rangeOverrides": {}
+    },
+    {
+      "id": "pearl-dgs",
+      "name": "Pearl DGS",
+      "enabled": true,
+      "constantField": "PearlDgsAConstant",
+      "combinations": [
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": false
+        },
+        {
+          "toric": false,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": true
+        },
+        {
+          "toric": true,
+          "postLvcRk": [ "None", "MLvc", "HLvc", "RK" ],
+          "keratometryInputs": [ "EstimatedPK", "PentacamPK", "IOLMaster700PK" ],
+          "keratoconus": false,
+          "sosAL": true
+        }
+      ],
+      "requiredFields": [ "AL", "ACD", "LT", "K1", "K2", "TargetRefraction", "PearlDgsAConstant" ],
+      "conditionalRequiredFields": [
+        { "when": { "toric": true }, "fields": [ "K1Axis", "K2Axis" ] },
+        { "when": { "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1", "PK2", "PkDevice" ] },
+        { "when": { "toric": true, "keratometryInputs": [ "PentacamPK", "IOLMaster700PK" ] }, "fields": [ "PK1Axis", "PK2Axis" ] }
+      ],
+      "rangeOverrides": {}
+    }
+  ]
+}

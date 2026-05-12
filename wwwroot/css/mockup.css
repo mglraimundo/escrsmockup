@@ -1002,6 +1002,23 @@ body {
     gap: 8px;
 }
 
+.biometry-section,
+.iol-section,
+.formula-section {
+    min-width: 0;
+}
+
+.iol-section,
+.formula-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.formula-section .formula-status-panel {
+    margin-top: 0;
+}
+
 .mini-field,
 .mini-field-placeholder {
     box-sizing: border-box;
@@ -1117,6 +1134,214 @@ body {
     padding: 5px;
 }
 
+.formula-status-panel {
+    margin-top: 12px;
+    padding: 0;
+    border: 1px solid #dfe5f1;
+    border-radius: 9px;
+    background: #fbfcff;
+    overflow: hidden;
+}
+
+.formula-status-panel.ready {
+    border-color: #b7dfc1;
+    background: #f3fbf5;
+}
+
+.formula-status-panel.missing {
+    border-color: #f0d48a;
+    background: #fffaf0;
+}
+
+.formula-status-panel.invalid {
+    border-color: #f0b3b3;
+    background: #fff7f7;
+}
+
+.formula-status-panel.neutral {
+    border-color: #dce2ec;
+    background: #f7f9fc;
+}
+
+.formula-status-header {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+    padding: 9px 10px;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 800;
+    font-family: inherit;
+    text-transform: uppercase;
+    text-align: left;
+}
+
+.formula-status-header:hover {
+    background: rgba(255, 255, 255, 0.42);
+}
+
+.formula-status-title {
+    color: #5b667d;
+}
+
+.formula-status-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #5b667d;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.formula-status-summary .mud-icon-root {
+    font-size: 1rem;
+}
+
+.formula-status-panel.ready .formula-status-summary {
+    color: #166534;
+}
+
+.formula-status-panel.missing .formula-status-summary {
+    color: #8a5600;
+}
+
+.formula-status-panel.invalid .formula-status-summary {
+    color: #a71919;
+}
+
+.formula-rules-error {
+    color: #b42318;
+    text-transform: none;
+    font-weight: 700;
+}
+
+.formula-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
+    padding: 0 10px 10px;
+}
+
+.formula-chip {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 42px;
+    padding: 7px 9px;
+    text-align: left;
+    transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.formula-chip:hover {
+    border-color: #c7d0eb;
+    box-shadow: 0 5px 12px rgba(26, 39, 72, 0.07);
+}
+
+.formula-chip-topline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.formula-chip-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.formula-chip-state {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    padding: 2px 6px;
+    font-size: 0.62rem;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.formula-chip-summary {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.formula-chip-details {
+    display: grid;
+    gap: 3px;
+    margin-top: 3px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(100, 112, 138, 0.16);
+    color: #41506b;
+    font-size: 0.68rem;
+    line-height: 1.25;
+}
+
+.formula-chip.ready {
+    border-color: #b7dfc1;
+    background: #f3fbf5;
+}
+
+.formula-chip.ready .formula-chip-state {
+    background: #dff4e5;
+    color: #166534;
+}
+
+.formula-chip.missing {
+    border-color: #f0d48a;
+    background: #fffaf0;
+}
+
+.formula-chip.missing .formula-chip-state {
+    background: #fff0bf;
+    color: #8a5600;
+}
+
+.formula-chip.invalid {
+    border-color: #f0b3b3;
+    background: #fff7f7;
+}
+
+.formula-chip.invalid .formula-chip-state {
+    background: #ffe0e0;
+    color: #a71919;
+}
+
+.formula-chip.unsupported,
+.formula-chip.disabled {
+    border-color: #dce2ec;
+    background: #f7f9fc;
+}
+
+.formula-chip.unsupported .formula-chip-state,
+.formula-chip.disabled .formula-chip-state {
+    background: #e9edf5;
+    color: #576177;
+}
+
 .eye-nav {
     margin-top: 14px;
     display: flex;
@@ -1227,6 +1452,15 @@ body {
     color: var(--text-main);
 }
 
+.formula-rule-tabs .mud-tabs-toolbar {
+    border-radius: 8px;
+    background: #f5f7fb;
+}
+
+.formula-rule-tab-panel {
+    padding-top: 12px;
+}
+
 .formula-table-wrapper {
     overflow-x: auto;
     border-radius: 10px;
@@ -1240,6 +1474,15 @@ body {
     border-collapse: collapse;
     font-size: 0.88rem;
     min-width: 640px;
+}
+
+.rules-matrix-table {
+    min-width: 920px;
+}
+
+.fields-table,
+.ranges-table {
+    min-width: 860px;
 }
 
 .formula-table thead th {
@@ -1259,7 +1502,8 @@ body {
     padding: 10px 10px;
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: 1.35;
 }
 
 .formula-table tbody tr:last-child td {
@@ -1368,12 +1612,19 @@ body {
     }
 
     .measurement-grid,
-    .constants-grid {
+    .constants-grid,
+    .formula-chip-grid {
         grid-template-columns: 1fr;
     }
 
     .mini-field-placeholder {
         display: none;
+    }
+
+    .iol-section,
+    .formula-section {
+        margin-top: 12px;
+        padding-top: 12px;
     }
 
     .field-cell {

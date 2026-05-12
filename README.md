@@ -9,6 +9,16 @@ dotnet run
 
 Open the URL shown by `dotnet run`.
 
+## Formula Rules
+
+Formula support, required fields, conditional requirements, and numeric ranges are authored in:
+
+```text
+wwwroot/data/formula-rules.json
+```
+
+See [Formula Rules Authoring Guide](docs/formula-rules-authoring.md) before editing the rule file.
+
 ## Deploy to GitHub Pages
 
 ```bash
