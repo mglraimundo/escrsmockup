@@ -502,9 +502,6 @@ body {
 
 .biomapi-warning {
     margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
     padding: 5px 8px;
     border-radius: 7px;
     border: 1px solid #edd38c;
@@ -515,8 +512,48 @@ body {
     line-height: 1.15;
 }
 
+.biomapi-warning-toggle {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.biomapi-warning-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-weight: 700;
+}
+
 .biomapi-warning .mud-icon-root {
     font-size: 1rem;
+}
+
+.biomapi-warning-list {
+    margin: 8px 0 2px;
+    padding-left: 24px;
+    color: #6d4a0c;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.biomapi-warning-list li {
+    padding-left: 3px;
+}
+
+.biomapi-warning-list li + li {
+    margin-top: 7px;
 }
 
 .patient-strip {
@@ -978,6 +1015,35 @@ body {
     padding: 8px 12px;
     display: block;
     transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.mini-axis-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(50px, 0.8fr);
+    gap: 6px;
+    padding-inline: 10px;
+}
+
+.mini-axis-field .mud-input-control-input-container {
+    padding-top: 20px;
+}
+
+.mini-axis-field input {
+    font-size: 0.86rem !important;
+}
+
+.mini-axis-field .mud-input-adornment-end {
+    gap: 0;
+}
+
+.mini-axis-field .mud-input-adornment-text {
+    font-size: 0.68rem !important;
+}
+
+.mini-axis-field .mud-icon-button {
+    width: 22px;
+    height: 22px;
+    padding: 3px;
 }
 
 .mini-field-placeholder {

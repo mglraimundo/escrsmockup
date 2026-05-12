@@ -1,4 +1,5 @@
 @page "/"
+@using System.Globalization
 @using System.Text.RegularExpressions
 @using MudBlazor
 @implements IDisposable
@@ -189,8 +190,27 @@
                 </div>
 
                 <div class="biomapi-warning">
-                    <MudIcon Icon="@Icons.Material.Filled.Science" Size="Size.Small" />
-                    <span>BiomAPI is in technology preview. Please double-check all extracted values.</span>
+                    <button type="button"
+                            class="biomapi-warning-toggle"
+                            aria-expanded="@_isBiomApiInfoExpanded"
+                            @onclick="ToggleBiomApiInfo">
+                        <span class="biomapi-warning-summary">
+                            <MudIcon Icon="@Icons.Material.Filled.Science" Size="Size.Small" />
+                            <span>BiomAPI is in technology preview. Please double-check all extracted values.</span>
+                        </span>
+                        <MudIcon Icon="@(_isBiomApiInfoExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                 Size="Size.Small" />
+                    </button>
+
+                    @if (_isBiomApiInfoExpanded)
+                    {
+                        <ol class="biomapi-warning-list">
+                            <li>Upload the PDF or image of your biometry printout when possible. A high-quality smartphone photo of the full page can also be used, but may be less accurate.</li>
+                            <li>Extraction is highly accurate, over 99%, but errors can still occur. Please double-check all extracted values.</li>
+                            <li>Processing has been optimized for the printouts of the Alcon Argos, Haag-Streit Eyestar 900, Haag-Streit Lenstar 900, Heidelberg Anterion, OCULUS Pentacam AXL, Tomey OA-2000, Topcon Aladdin, and ZEISS IOLMaster 700.</li>
+                            <li>BiomAPI is not a certified medical device. It is a prototype cloud infrastructure for processing biometry data for research purposes.</li>
+                        </ol>
+                    }
                 </div>
             }
         </MudPaper>
@@ -371,6 +391,7 @@
 
     private bool UseCommaDecimalFormat;
     private bool _isBiomApiExpanded = false;
+    private bool _isBiomApiInfoExpanded;
     private int _activeBiomApiTab;
     private bool _isBiomApiLoading;
     private string? _selectedUploadFile;
@@ -413,6 +434,11 @@
     private void ToggleBiomApiPanel()
     {
         _isBiomApiExpanded = !_isBiomApiExpanded;
+    }
+
+    private void ToggleBiomApiInfo()
+    {
+        _isBiomApiInfoExpanded = !_isBiomApiInfoExpanded;
     }
 
     private void ToggleDecimalFormat()
@@ -526,7 +552,9 @@
         RightEye.CCT.Value = "545";
         RightEye.WTW.Value = "11.8";
         RightEye.K1.Value = "43.25";
+        RightEye.K1.Axis = "178";
         RightEye.K2.Value = "44.50";
+        RightEye.K2.Axis = "88";
 
         LeftEye.AL.Value = "23.68";
         LeftEye.ACD.Value = "3.12";
@@ -534,7 +562,9 @@
         LeftEye.CCT.Value = "552";
         LeftEye.WTW.Value = "11.7";
         LeftEye.K1.Value = "43.10";
+        LeftEye.K1.Axis = "4";
         LeftEye.K2.Value = "44.35";
+        LeftEye.K2.Axis = "94";
     }
 
     private void UpsertHistory(BiomHistoryItem item)
@@ -596,6 +626,31 @@
                       ClearIcon="@Icons.Material.Filled.Close"
                       Adornment="Adornment.End"
                       AdornmentText="@field.Unit" />
+    </div>;
+
+    private RenderFragment MiniAxisField(EyeField field, EyeField complementaryField) => @<div class="mini-field mini-axis-field">
+        <MudTextField T="string"
+                      Label="@field.Label"
+                      @bind-Value="field.Value"
+                      Variant="Variant.Filled"
+                      Margin="Margin.Dense"
+                      Placeholder="–"
+                      Clearable="true"
+                      ClearIcon="@Icons.Material.Filled.Close"
+                      Adornment="Adornment.End"
+                      AdornmentText="@field.Unit" />
+        <MudTextField T="string"
+                      Label="Axis"
+                      Value="@field.Axis"
+                      ValueChanged="@(value => UpdateAxis(field, complementaryField, value))"
+                      Variant="Variant.Filled"
+                      Margin="Margin.Dense"
+                      Placeholder="–"
+                      Immediate="true"
+                      Clearable="true"
+                      ClearIcon="@Icons.Material.Filled.Close"
+                      Adornment="Adornment.End"
+                      AdornmentText="º" />
     </div>;
 
     private RenderFragment MiniText(string label, string value, Action<string> valueChanged) => @<div class="mini-field">
@@ -672,13 +727,10 @@
             <div class="toggle-chip-row">
                 @if (!eye.IsPostLvcRk)
                 {
-                    <button type="button"
-                            class="toggle-chip"
-                            aria-pressed="false"
-                            @onclick="@(() => {
-                                eye.IsPostLvcRk = true;
-                                eye.PostLvcRkType = "M-LVC";
-                            })">
+                            <button type="button"
+                                    class="toggle-chip"
+                                    aria-pressed="false"
+                                    @onclick="@(() => SelectPostLvcRk(eye, "M-LVC"))">
                         Post LVC/RK
                     </button>
                 }
@@ -688,10 +740,7 @@
                         <button type="button"
                                 class="compound-chip-toggle"
                                 aria-pressed="true"
-                                @onclick="@(() => {
-                                    eye.IsPostLvcRk = false;
-                                    eye.PostLvcRkType = string.Empty;
-                                })">
+                                @onclick="@(() => ClearPostLvcRk(eye))">
                             Post LVC/RK
                         </button>
                         <div class="compound-chip-options" role="group" aria-label="Post LVC/RK subtype">
@@ -700,7 +749,7 @@
                                 <button type="button"
                                         class="@($"compound-chip-option {(eye.PostLvcRkType == option ? "active" : null)}")"
                                         aria-pressed="@(eye.PostLvcRkType == option)"
-                                        @onclick="@(() => eye.PostLvcRkType = option)">
+                                        @onclick="@(() => SelectPostLvcRk(eye, option))">
                                     @option
                                 </button>
                             }
@@ -710,13 +759,13 @@
                 <button type="button"
                         class="@($"toggle-chip {(eye.IsKeratoconus ? "active" : null)}")"
                         aria-pressed="@eye.IsKeratoconus"
-                        @onclick="@(() => eye.IsKeratoconus = !eye.IsKeratoconus)">
+                        @onclick="@(() => ToggleKeratoconus(eye))">
                     KC
                 </button>
                 <button type="button"
                         class="@($"toggle-chip {(eye.IsArgosSosAL ? "active" : null)}")"
                         aria-pressed="@eye.IsArgosSosAL"
-                        @onclick="@(() => eye.IsArgosSosAL = !eye.IsArgosSosAL)">
+                        @onclick="@(() => ToggleArgosSosAL(eye))">
                     SoS AL
                 </button>
             </div>
@@ -728,9 +777,32 @@
                 @MiniField(eye.CCT)
                 @MiniField(eye.WTW)
                 @MiniSelect("n", eye.Index, value => eye.Index = value, IndexOptions)
-                @MiniField(eye.K1)
-                @MiniField(eye.K2)
-                <div class="mini-field-placeholder" aria-hidden="true"></div>
+                @if (eye.IsToric)
+                {
+                    @MiniAxisField(eye.K1, eye.K2)
+                    @MiniAxisField(eye.K2, eye.K1)
+                    @MiniSelect("PCA", eye.PcaMode, value => eye.PcaMode = value, PcaOptions)
+                }
+                else
+                {
+                    @MiniField(eye.K1)
+                    @MiniField(eye.K2)
+                    <div class="mini-field-placeholder" aria-hidden="true"></div>
+                }
+
+                @if (eye.IsToric && eye.PcaMode == "Measured")
+                {
+                    @MiniSelect("PK Device", eye.PkDevice, value => eye.PkDevice = value, PkDeviceOptions)
+                    @MiniAxisField(eye.PK1, eye.PK2)
+                    @MiniAxisField(eye.PK2, eye.PK1)
+
+                    @if (eye.PkDevice == "IOL Master 700")
+                    {
+                        <div class="mini-field-placeholder" aria-hidden="true"></div>
+                        @MiniAxisField(eye.TK1, eye.TK2)
+                        @MiniAxisField(eye.TK2, eye.TK1)
+                    }
+                }
 
                 @MiniSelect("IOL Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
                 @MiniSelect("IOL Model", eye.Iol, value => eye.Iol = value, IolOptions)
@@ -772,6 +844,73 @@
             </div>
         </div>
     </MudPaper>;
+
+    private static void SelectPostLvcRk(EyeModel eye, string type)
+    {
+        eye.IsPostLvcRk = true;
+        eye.PostLvcRkType = type;
+        eye.IsKeratoconus = false;
+    }
+
+    private static void ClearPostLvcRk(EyeModel eye)
+    {
+        eye.IsPostLvcRk = false;
+        eye.PostLvcRkType = string.Empty;
+    }
+
+    private static void ToggleKeratoconus(EyeModel eye)
+    {
+        eye.IsKeratoconus = !eye.IsKeratoconus;
+
+        if (eye.IsKeratoconus)
+        {
+            ClearPostLvcRk(eye);
+            eye.IsArgosSosAL = false;
+        }
+    }
+
+    private static void ToggleArgosSosAL(EyeModel eye)
+    {
+        eye.IsArgosSosAL = !eye.IsArgosSosAL;
+
+        if (eye.IsArgosSosAL)
+        {
+            eye.IsKeratoconus = false;
+        }
+    }
+
+    private static void UpdateAxis(EyeField source, EyeField complementaryField, string value)
+    {
+        source.Axis = value;
+
+        if (TryParseAxis(value, out var axis))
+        {
+            complementaryField.Axis = FormatAxis(GetComplementaryAxis(axis));
+        }
+    }
+
+    private static bool TryParseAxis(string value, out decimal axis)
+    {
+        axis = 0;
+        var normalizedValue = value.Replace(',', '.');
+
+        return decimal.TryParse(normalizedValue, NumberStyles.Number, CultureInfo.InvariantCulture, out axis)
+            && axis >= 0
+            && axis <= 180;
+    }
+
+    private static decimal GetComplementaryAxis(decimal axis)
+    {
+        var complementaryAxis = axis + 90;
+        return complementaryAxis <= 180 ? complementaryAxis : axis - 90;
+    }
+
+    private static string FormatAxis(decimal axis)
+    {
+        return axis % 1 == 0
+            ? axis.ToString("0", CultureInfo.InvariantCulture)
+            : axis.ToString("0.##", CultureInfo.InvariantCulture);
+    }
 
     public class ConstantItem
     {
@@ -835,12 +974,18 @@
         public EyeField WTW { get; } = new("WTW", "mm");
         public EyeField K1 { get; } = new("K1", "D");
         public EyeField K2 { get; } = new("K2", "D");
+        public EyeField PK1 { get; } = new("PK1", "D");
+        public EyeField PK2 { get; } = new("PK2", "D");
+        public EyeField TK1 { get; } = new("TK1", "D");
+        public EyeField TK2 { get; } = new("TK2", "D");
         public bool IsEnabled { get; set; } = true;
         public bool IsToric { get; set; }
         public bool IsKeratoconus { get; set; }
         public bool IsArgosSosAL { get; set; }
         public bool IsPostLvcRk { get; set; }
         public string PostLvcRkType { get; set; } = "M-LVC";
+        public string PcaMode { get; set; } = "Estimated";
+        public string PkDevice { get; set; } = "IOL Master 700";
         public string Index { get; set; } = "1.3375";
         public string TargetRefraction { get; set; } = "-0.25";
         public string Manufacturer { get; set; } = "Alcon";
@@ -857,10 +1002,13 @@
 
         public string Label { get; }
         public string Value { get; set; } = string.Empty;
+        public string Axis { get; set; } = string.Empty;
         public string Unit { get; }
     }
 
     private static readonly string[] IndexOptions = { "1.3375", "1.3320" };
+    private static readonly string[] PcaOptions = { "Estimated", "Measured" };
+    private static readonly string[] PkDeviceOptions = { "IOL Master 700", "Pentacam" };
     private static readonly string[] ManufacturerOptions = { "---", "Alcon", "Bausch + Lomb", "Johnson & Johnson", "Zeiss" };
     private static readonly string[] IolOptions = { "---", "Clareon CNA0T0", "AcrySof IQ SN60WF", "enVista MX60", "Tecnis DCB00" };
     private static readonly string[] PostLvcRkOptions = { "M-LVC", "H-LVC", "RK" };
