@@ -1,3 +1,5 @@
+@using System.Text.Json
+@using escrsmockup.FormulaRules
 @using MudBlazor
 
 <MudDialog Class="settings-dialog">
@@ -20,36 +22,22 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var formula in _workingConfigs)
+                        @foreach (var formula in _workingRules.Formulas)
                         {
                             <tr>
                                 <td class="col-enabled">
                                     <MudSwitch T="bool"
-                                               @bind-Value="formula.IsEnabled"
+                                               @bind-Value="formula.Enabled"
                                                Color="Color.Primary" />
                                 </td>
                                 <td class="col-formula">@formula.Name</td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.NonToric ? "supported" : "unsupported")"></span>
-                                </td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.Toric ? "supported" : "unsupported")"></span>
-                                </td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.MLvc ? "supported" : "unsupported")"></span>
-                                </td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.HLvc ? "supported" : "unsupported")"></span>
-                                </td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.Rk ? "supported" : "unsupported")"></span>
-                                </td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.Kc ? "supported" : "unsupported")"></span>
-                                </td>
-                                <td class="col-capability">
-                                    <span class="capability-dot @(formula.SosAl ? "supported" : "unsupported")"></span>
-                                </td>
+                                <td class="col-capability">@CapabilityDot(SupportsToric(formula, false))</td>
+                                <td class="col-capability">@CapabilityDot(SupportsToric(formula, true))</td>
+                                <td class="col-capability">@CapabilityDot(SupportsPostLvc(formula, PostLvcRkType.MLvc))</td>
+                                <td class="col-capability">@CapabilityDot(SupportsPostLvc(formula, PostLvcRkType.HLvc))</td>
+                                <td class="col-capability">@CapabilityDot(SupportsPostLvc(formula, PostLvcRkType.RK))</td>
+                                <td class="col-capability">@CapabilityDot(SupportsFlag(formula, combination => combination.Keratoconus, true))</td>
+                                <td class="col-capability">@CapabilityDot(SupportsFlag(formula, combination => combination.SosAL, true))</td>
                             </tr>
                         }
                     </tbody>
@@ -70,26 +58,47 @@
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter]
-    public List<Home.FormulaConfig> FormulaConfigs { get; set; } = default!;
+    public FormulaRuleSet FormulaRules { get; set; } = new();
 
-    private List<Home.FormulaConfig> _workingConfigs = new();
+    private FormulaRuleSet _workingRules = new();
 
     protected override void OnParametersSet()
     {
-        _workingConfigs = FormulaConfigs
-            .Select(f => new Home.FormulaConfig(f.Name, f.IsEnabled, f.NonToric, f.Toric, f.MLvc, f.HLvc, f.Rk, f.Kc, f.SosAl))
-            .ToList();
+        _workingRules = CloneRules(FormulaRules);
+    }
+
+    private static FormulaRuleSet CloneRules(FormulaRuleSet rules)
+    {
+        var json = JsonSerializer.Serialize(rules, FormulaRuleJson.Options);
+        return JsonSerializer.Deserialize<FormulaRuleSet>(json, FormulaRuleJson.Options) ?? new FormulaRuleSet();
     }
 
     private void Reset()
     {
-        foreach (var formula in _workingConfigs)
+        foreach (var formula in _workingRules.Formulas)
         {
-            formula.IsEnabled = true;
+            formula.Enabled = true;
         }
     }
 
     private void Cancel() => MudDialog.Cancel();
 
-    private void Save() => MudDialog.Close(DialogResult.Ok(_workingConfigs));
+    private void Save() => MudDialog.Close(DialogResult.Ok(_workingRules));
+
+    private static RenderFragment CapabilityDot(bool supported) => @<span class="capability-dot @(supported ? "supported" : "unsupported")"></span>;
+
+    private static bool SupportsToric(FormulaRule formula, bool isToric)
+    {
+        return formula.Combinations.Any(combination => !combination.Toric.HasValue || combination.Toric.Value == isToric);
+    }
+
+    private static bool SupportsPostLvc(FormulaRule formula, PostLvcRkType postLvcRk)
+    {
+        return formula.Combinations.Any(combination => combination.PostLvcRk.Count == 0 || combination.PostLvcRk.Contains(postLvcRk));
+    }
+
+    private static bool SupportsFlag(FormulaRule formula, Func<FormulaCombination, bool?> selector, bool value)
+    {
+        return formula.Combinations.Any(combination => !selector(combination).HasValue || selector(combination) == value);
+    }
 }

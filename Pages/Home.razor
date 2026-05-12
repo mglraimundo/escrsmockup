@@ -1,8 +1,10 @@
 @page "/"
 @using System.Globalization
 @using System.Text.RegularExpressions
+@using escrsmockup.FormulaRules
 @using MudBlazor
 @implements IDisposable
+@inject HttpClient Http
 @inject IJSRuntime JS
 @inject IDialogService DialogService
 
@@ -288,11 +290,28 @@
 
     private string ActiveBanner => BannerImages[_activeBannerIndex];
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _bannerTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
         _bannerTimerCancellation = new CancellationTokenSource();
         _ = RotateBannersAsync(_bannerTimerCancellation.Token);
+
+        await LoadFormulaRulesAsync();
+    }
+
+    private async Task LoadFormulaRulesAsync()
+    {
+        try
+        {
+            FormulaRules = await Http.GetFromJsonAsync<FormulaRuleSet>("data/formula-rules.json", FormulaRuleJson.Options)
+                ?? new FormulaRuleSet();
+            _formulaRulesError = null;
+        }
+        catch (Exception ex)
+        {
+            FormulaRules = new FormulaRuleSet();
+            _formulaRulesError = $"Formula rules could not be loaded: {ex.Message}";
+        }
     }
 
     private async Task RotateBannersAsync(CancellationToken cancellationToken)
@@ -363,25 +382,16 @@
 
     private List<ConstantItem> Constants = new()
     {
-        new("Barrett A-Constant", "119.3537", "Barrett UII"),
-        new("Cooke A-Constant", "119.3556", "Cooke K6"),
-        new("EVO A-Constant", "119.1", "EVO"),
-        new("Hill-RBF A-Constant", "119.3537", "Hill-RBF"),
-        new("Hoffer® pACD", "5.76", "Hoffer QST"),
-        new("Kane A-Constant", "119.3537", "Kane"),
-        new("Pearl DGS A-Constant", "119.3537", "Pearl DGS")
+        new("Barrett A-Constant", "119.3537", "Barrett UII", FieldId.BarrettAConstant),
+        new("Cooke A-Constant", "119.3556", "Cooke K6", FieldId.CookeAConstant),
+        new("EVO A-Constant", "119.1", "EVO", FieldId.EvoAConstant),
+        new("Hill-RBF A-Constant", "119.3537", "Hill-RBF", FieldId.HillRbfAConstant),
+        new("Hoffer® pACD", "5.76", "Hoffer QST", FieldId.HofferPcd),
+        new("Kane A-Constant", "119.3537", "Kane", FieldId.KaneAConstant),
+        new("Pearl DGS A-Constant", "119.3537", "Pearl DGS", FieldId.PearlDgsAConstant)
     };
 
-    private List<FormulaConfig> FormulaConfigs = new()
-    {
-        new("Barrett UII", true, true, true, true, true, true, true, false),
-        new("Cooke K6", true, true, false, true, true, true, false, true),
-        new("EVO", true, true, true, true, true, true, false, true),
-        new("Hill-RBF", true, true, false, false, false, false, false, false),
-        new("Hoffer QST", true, true, true, true, false, false, false, false),
-        new("Kane", true, true, true, false, false, false, true, false),
-        new("Pearl DGS", true, true, true, true, true, true, false, true)
-    };
+    private FormulaRuleSet FormulaRules { get; set; } = new();
 
     private PatientModel Patient { get; } = new();
 
@@ -398,7 +408,10 @@
     private string _biomPinInput = "portion-stuff-635550";
     private string _historySearch = string.Empty;
     private string? _biomApiError;
+    private string? _formulaRulesError;
     private BiomLoadSummary? _lastBiomApiLoad;
+    private HashSet<string> _expandedFormulaPanelIds = new();
+    private HashSet<string> _expandedFormulaChipIds = new();
     private static readonly Regex BiomPinPattern = new(@"[a-z]+-[a-z]+-\d{6}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private string BiomApiCardClass => $"section-card biomapi-card {(_isBiomApiExpanded ? "expanded" : "collapsed")}";
 
@@ -450,20 +463,20 @@
     {
         var parameters = new DialogParameters
         {
-            { "FormulaConfigs", FormulaConfigs }
+            { "FormulaRules", FormulaRules }
         };
         var options = new DialogOptions
         {
             CloseButton = true,
-            MaxWidth = MaxWidth.Medium,
+            MaxWidth = MaxWidth.Large,
             FullWidth = true
         };
         var dialog = await DialogService.ShowAsync<SettingsDialog>("Settings", parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false } && result.Data is List<FormulaConfig> updatedConfigs)
+        if (result is { Canceled: false } && result.Data is FormulaRuleSet updatedRules)
         {
-            FormulaConfigs = updatedConfigs;
+            FormulaRules = updatedRules;
         }
     }
 
@@ -724,154 +737,222 @@
         </div>
 
         <div class="eye-body @(eye.IsEnabled ? null : "disabled")">
-            <div class="toggle-chip-row">
-                @if (!eye.IsPostLvcRk)
-                {
-                            <button type="button"
-                                    class="toggle-chip"
-                                    aria-pressed="false"
-                                    @onclick="@(() => SelectPostLvcRk(eye, "M-LVC"))">
-                        Post LVC/RK
-                    </button>
-                }
-                else
-                {
-                    <div class="compound-chip active">
+            <div class="biometry-section">
+                <div class="toggle-chip-row">
+                    @if (!eye.IsPostLvcRk)
+                    {
                         <button type="button"
-                                class="compound-chip-toggle"
-                                aria-pressed="true"
-                                @onclick="@(() => ClearPostLvcRk(eye))">
+                                class="toggle-chip"
+                                aria-pressed="false"
+                                @onclick="@(() => SelectPostLvcRk(eye, "M-LVC"))">
                             Post LVC/RK
                         </button>
-                        <div class="compound-chip-options" role="group" aria-label="Post LVC/RK subtype">
-                            @foreach (var option in PostLvcRkOptions)
-                            {
-                                <button type="button"
-                                        class="@($"compound-chip-option {(eye.PostLvcRkType == option ? "active" : null)}")"
-                                        aria-pressed="@(eye.PostLvcRkType == option)"
-                                        @onclick="@(() => SelectPostLvcRk(eye, option))">
-                                    @option
-                                </button>
-                            }
-                        </div>
-                    </div>
-                }
-                <button type="button"
-                        class="@($"toggle-chip {(eye.IsKeratoconus ? "active" : null)}")"
-                        aria-pressed="@eye.IsKeratoconus"
-                        @onclick="@(() => ToggleKeratoconus(eye))">
-                    KC
-                </button>
-                <button type="button"
-                        class="@($"toggle-chip {(eye.IsArgosSosAL ? "active" : null)}")"
-                        aria-pressed="@eye.IsArgosSosAL"
-                        @onclick="@(() => ToggleArgosSosAL(eye))">
-                    SoS AL
-                </button>
-            </div>
-
-            @{
-                var showPcaInterface = eye.IsToric || eye.IsPostLvcRk;
-                var showMeasuredPkTk = eye.IsPostLvcRk || (eye.IsToric && eye.PcaMode == "Measured");
-            }
-
-            <div class="measurement-grid">
-                @MiniField(eye.AL)
-                @MiniField(eye.ACD)
-                @MiniField(eye.LT)
-                @MiniField(eye.CCT)
-                @MiniField(eye.WTW)
-                @MiniSelect("n", eye.Index, value => eye.Index = value, IndexOptions)
-                @if (eye.IsToric)
-                {
-                    @MiniAxisField(eye.K1, eye.K2)
-                    @MiniAxisField(eye.K2, eye.K1)
-                }
-                else
-                {
-                    @MiniField(eye.K1)
-                    @MiniField(eye.K2)
-                }
-
-                @if (showPcaInterface)
-                {
-                    @MiniSelect("PK", eye.PcaMode, value => eye.PcaMode = value, PcaOptions)
-                }
-                else
-                {
-                    <div class="mini-field-placeholder" aria-hidden="true"></div>
-                }
-
-                @if (showMeasuredPkTk)
-                {
-                    @MiniSelect("PK Device", eye.PkDevice, value => eye.PkDevice = value, PkDeviceOptions)
-                    @if (eye.IsToric)
-                    {
-                        @MiniAxisField(eye.PK1, eye.PK2)
-                        @MiniAxisField(eye.PK2, eye.PK1)
                     }
                     else
                     {
-                        @MiniField(eye.PK1)
-                        @MiniField(eye.PK2)
-                    }
-
-                    @if (eye.PkDevice == "IOLMaster 700")
-                    {
-                        <div class="mini-field-placeholder" aria-hidden="true"></div>
-                        @if (eye.IsToric)
-                        {
-                            @MiniAxisField(eye.TK1, eye.TK2)
-                            @MiniAxisField(eye.TK2, eye.TK1)
-                        }
-                        else
-                        {
-                            @MiniField(eye.TK1)
-                            @MiniField(eye.TK2)
-                        }
-                    }
-                }
-
-                @MiniSelect("IOL Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
-                @MiniSelect("IOL Model", eye.Iol, value => eye.Iol = value, IolOptions)
-                @MiniText("Target Refraction", eye.TargetRefraction, value => eye.TargetRefraction = value)
-            </div>
-
-            <div class="constants-grid">
-                @foreach (var item in Constants.Where(c => FormulaConfigs.Any(f => f.Name == c.FormulaName && f.IsEnabled)))
-                {
-                    <div class="constant-row">
-                        <div class="constant-field">
-                            <div class="constant-label">@item.Label</div>
-                            <div class="constant-value-row">
-                                <div class="constant-value @(string.IsNullOrWhiteSpace(item.Value) ? "empty" : null)">
-                                    @(string.IsNullOrWhiteSpace(item.Value) ? "–" : item.Value)
-                                </div>
-
-                                @if (!string.IsNullOrWhiteSpace(item.Value))
+                        <div class="compound-chip active">
+                            <button type="button"
+                                    class="compound-chip-toggle"
+                                    aria-pressed="true"
+                                    @onclick="@(() => ClearPostLvcRk(eye))">
+                                Post LVC/RK
+                            </button>
+                            <div class="compound-chip-options" role="group" aria-label="Post LVC/RK subtype">
+                                @foreach (var option in PostLvcRkOptions)
                                 {
-                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                                   Size="Size.Small"
-                                                   Class="field-clear-button"
-                                                   OnClick="@(() => item.Value = string.Empty)" />
+                                    <button type="button"
+                                            class="@($"compound-chip-option {(eye.PostLvcRkType == option ? "active" : null)}")"
+                                            aria-pressed="@(eye.PostLvcRkType == option)"
+                                            @onclick="@(() => SelectPostLvcRk(eye, option))">
+                                        @option
+                                    </button>
                                 }
                             </div>
                         </div>
+                    }
+                    <button type="button"
+                            class="@($"toggle-chip {(eye.IsKeratoconus ? "active" : null)}")"
+                            aria-pressed="@eye.IsKeratoconus"
+                            @onclick="@(() => ToggleKeratoconus(eye))">
+                        KC
+                    </button>
+                    <button type="button"
+                            class="@($"toggle-chip {(eye.IsArgosSosAL ? "active" : null)}")"
+                            aria-pressed="@eye.IsArgosSosAL"
+                            @onclick="@(() => ToggleArgosSosAL(eye))">
+                        SoS AL
+                    </button>
+                </div>
 
-                        <MudIconButton Icon="@Icons.Material.Outlined.Info"
-                                       Size="Size.Small"
-                                       Color="Color.Secondary" />
-                    </div>
+                @{
+                    var showPcaInterface = eye.IsToric || eye.IsPostLvcRk;
+                    var showMeasuredPkTk = showPcaInterface && eye.PcaMode == "Measured";
                 }
+
+                <div class="measurement-grid biometry-grid">
+                    @MiniField(eye.AL)
+                    @MiniField(eye.ACD)
+                    @MiniField(eye.LT)
+                    @MiniField(eye.CCT)
+                    @MiniField(eye.WTW)
+                    @MiniSelect("n", eye.Index, value => eye.Index = value, IndexOptions)
+                    @if (eye.IsToric)
+                    {
+                        @MiniAxisField(eye.K1, eye.K2)
+                        @MiniAxisField(eye.K2, eye.K1)
+                    }
+                    else
+                    {
+                        @MiniField(eye.K1)
+                        @MiniField(eye.K2)
+                    }
+
+                    @if (showPcaInterface)
+                    {
+                        @MiniSelect("PK", eye.PcaMode, value => eye.PcaMode = value, PcaOptions)
+                    }
+                    else
+                    {
+                        <div class="mini-field-placeholder" aria-hidden="true"></div>
+                    }
+
+                    @if (showMeasuredPkTk)
+                    {
+                        @MiniSelect("PK Device", eye.PkDevice, value => eye.PkDevice = value, PkDeviceOptions)
+                        @if (eye.IsToric)
+                        {
+                            @MiniAxisField(eye.PK1, eye.PK2)
+                            @MiniAxisField(eye.PK2, eye.PK1)
+                        }
+                        else
+                        {
+                            @MiniField(eye.PK1)
+                            @MiniField(eye.PK2)
+                        }
+
+                        @if (eye.PkDevice == "IOLMaster 700")
+                        {
+                            <div class="mini-field-placeholder" aria-hidden="true"></div>
+                            @if (eye.IsToric)
+                            {
+                                @MiniAxisField(eye.TK1, eye.TK2)
+                                @MiniAxisField(eye.TK2, eye.TK1)
+                            }
+                            else
+                            {
+                                @MiniField(eye.TK1)
+                                @MiniField(eye.TK2)
+                            }
+                        }
+                    }
+                </div>
             </div>
 
-            <div class="eye-nav @(forward ? "forward" : "back")">
-                <MudIconButton Icon="@(forward ? Icons.Material.Filled.ChevronRight : Icons.Material.Filled.ChevronLeft)"
-                               Size="Size.Small"
-                               Class="chevron-button" />
+            <div class="iol-section">
+                <div class="measurement-grid iol-grid">
+                    @MiniSelect("IOL Manufacturer", eye.Manufacturer, value => eye.Manufacturer = value, ManufacturerOptions)
+                    @MiniSelect("IOL Model", eye.Iol, value => eye.Iol = value, IolOptions)
+                    @MiniText("Target Refraction", eye.TargetRefraction, value => eye.TargetRefraction = value)
+                </div>
+
+                <div class="constants-grid">
+                    @foreach (var item in Constants.Where(item => IsFormulaEnabled(item.FormulaName)))
+                    {
+                        <div class="constant-row">
+                            <div class="constant-field">
+                                <div class="constant-label">@item.Label</div>
+                                <div class="constant-value-row">
+                                    <div class="constant-value @(string.IsNullOrWhiteSpace(item.Value) ? "empty" : null)">
+                                        @(string.IsNullOrWhiteSpace(item.Value) ? "–" : item.Value)
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Value))
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                       Size="Size.Small"
+                                                       Class="field-clear-button"
+                                                       OnClick="@(() => item.Value = string.Empty)" />
+                                    }
+                                </div>
+                            </div>
+
+                            <MudIconButton Icon="@Icons.Material.Outlined.Info"
+                                           Size="Size.Small"
+                                           Color="Color.Secondary" />
+                        </div>
+                    }
+                </div>
+
+                <div class="eye-nav @(forward ? "forward" : "back")">
+                    <MudIconButton Icon="@(forward ? Icons.Material.Filled.ChevronRight : Icons.Material.Filled.ChevronLeft)"
+                                   Size="Size.Small"
+                                   Class="chevron-button" />
+                </div>
+            </div>
+
+            <div class="formula-section">
+                @FormulaStatusPanel(eyeCode, eye)
             </div>
         </div>
     </MudPaper>;
+
+    private RenderFragment FormulaStatusPanel(string eyeCode, EyeModel eye) => @<div class="@($"formula-status-panel {GetFormulaPanelStatusClass(GetFormulaResults(eye))}")">
+        @{
+            var results = GetFormulaResults(eye);
+            var isExpanded = _expandedFormulaPanelIds.Contains(eyeCode);
+        }
+        <button type="button"
+                class="formula-status-header"
+                aria-expanded="@isExpanded"
+                @onclick="@(() => ToggleFormulaPanel(eyeCode))">
+            <span class="formula-status-title">Formulas</span>
+            <span class="formula-status-summary">
+                @if (!string.IsNullOrWhiteSpace(_formulaRulesError))
+                {
+                    <span class="formula-rules-error">@_formulaRulesError</span>
+                }
+                else
+                {
+                    <span>@GetFormulaPanelSummary(results)</span>
+                }
+                <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                         Size="Size.Small" />
+            </span>
+        </button>
+        @if (isExpanded)
+        {
+            <div class="formula-chip-grid">
+                @foreach (var result in results)
+                {
+                    var chipId = $"{eyeCode}-{result.Formula.Id}";
+                    var isChipExpanded = _expandedFormulaChipIds.Contains(chipId);
+
+                    <button type="button"
+                            class="@($"formula-chip {GetFormulaStatusClass(result.Status)} {(isChipExpanded ? "expanded" : null)}")"
+                            aria-expanded="@isChipExpanded"
+                            @onclick="@(() => ToggleFormulaChip(chipId))">
+                        <span class="formula-chip-topline">
+                            <span class="formula-chip-name">@result.Formula.Name</span>
+                            <span class="formula-chip-state">@GetFormulaStatusLabel(result.Status)</span>
+                        </span>
+                        @if (result.Status != FormulaEligibilityStatus.Ready)
+                        {
+                            <span class="formula-chip-summary">@result.Summary</span>
+                        }
+                        @if (isChipExpanded)
+                        {
+                            <span class="formula-chip-details">
+                                @foreach (var detail in GetFormulaDetails(result))
+                                {
+                                    <span>@detail</span>
+                                }
+                            </span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+    </div>;
 
     private static void SelectPostLvcRk(EyeModel eye, string type)
     {
@@ -940,44 +1021,217 @@
             : axis.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
+    private List<FormulaEligibilityResult> GetFormulaResults(EyeModel eye)
+    {
+        var snapshot = CreateEyeSnapshot(eye);
+        return FormulaRules.Formulas
+            .Where(formula => formula.Enabled)
+            .Select(formula => FormulaEligibilityEvaluator.Evaluate(FormulaRules, formula, snapshot))
+            .ToList();
+    }
+
+    private FormulaEyeSnapshot CreateEyeSnapshot(EyeModel eye)
+    {
+        var values = new Dictionary<FieldId, string>
+        {
+            [FieldId.AL] = eye.AL.Value,
+            [FieldId.ACD] = eye.ACD.Value,
+            [FieldId.LT] = eye.LT.Value,
+            [FieldId.CCT] = eye.CCT.Value,
+            [FieldId.WTW] = eye.WTW.Value,
+            [FieldId.K1] = eye.K1.Value,
+            [FieldId.K2] = eye.K2.Value,
+            [FieldId.K1Axis] = eye.K1.Axis,
+            [FieldId.K2Axis] = eye.K2.Axis,
+            [FieldId.PK1] = eye.PK1.Value,
+            [FieldId.PK2] = eye.PK2.Value,
+            [FieldId.PK1Axis] = eye.PK1.Axis,
+            [FieldId.PK2Axis] = eye.PK2.Axis,
+            [FieldId.TK1] = eye.TK1.Value,
+            [FieldId.TK2] = eye.TK2.Value,
+            [FieldId.TK1Axis] = eye.TK1.Axis,
+            [FieldId.TK2Axis] = eye.TK2.Axis,
+            [FieldId.TargetRefraction] = eye.TargetRefraction
+        };
+
+        foreach (var constant in Constants)
+        {
+            values[constant.Field] = constant.Value;
+        }
+
+        return new FormulaEyeSnapshot(
+            eye.IsEnabled,
+            eye.IsToric,
+            GetPostLvcRkType(eye),
+            eye.IsKeratoconus,
+            eye.IsArgosSosAL,
+            GetAvailableKeratometryInputs(eye),
+            GetPkDevice(eye),
+            values);
+    }
+
+    private static PostLvcRkType GetPostLvcRkType(EyeModel eye)
+    {
+        if (!eye.IsPostLvcRk)
+        {
+            return PostLvcRkType.None;
+        }
+
+        return eye.PostLvcRkType switch
+        {
+            "M-LVC" => PostLvcRkType.MLvc,
+            "H-LVC" => PostLvcRkType.HLvc,
+            "RK" => PostLvcRkType.RK,
+            _ => PostLvcRkType.None
+        };
+    }
+
+    private static IReadOnlyList<KeratometryInput> GetAvailableKeratometryInputs(EyeModel eye)
+    {
+        if (eye.PcaMode != "Measured")
+        {
+            return new[] { KeratometryInput.EstimatedPK };
+        }
+
+        return eye.PkDevice switch
+        {
+            "IOLMaster 700" => new[] { KeratometryInput.IOLMaster700PK, KeratometryInput.IOLMaster700TK },
+            "Pentacam" => new[] { KeratometryInput.PentacamPK },
+            _ => Array.Empty<KeratometryInput>()
+        };
+    }
+
+    private static PkDevice? GetPkDevice(EyeModel eye)
+    {
+        return eye.PkDevice switch
+        {
+            "IOLMaster 700" => PkDevice.IOLMaster700,
+            "Pentacam" => PkDevice.Pentacam,
+            _ => null
+        };
+    }
+
+    private bool IsFormulaEnabled(string formulaName)
+    {
+        return FormulaRules.Formulas.Any(formula => formula.Name == formulaName && formula.Enabled);
+    }
+
+    private void ToggleFormulaChip(string chipId)
+    {
+        if (!_expandedFormulaChipIds.Add(chipId))
+        {
+            _expandedFormulaChipIds.Remove(chipId);
+        }
+    }
+
+    private void ToggleFormulaPanel(string eyeCode)
+    {
+        if (!_expandedFormulaPanelIds.Add(eyeCode))
+        {
+            _expandedFormulaPanelIds.Remove(eyeCode);
+        }
+    }
+
+    private static string GetFormulaPanelStatusClass(IReadOnlyList<FormulaEligibilityResult> results)
+    {
+        if (results.Any(result => result.Status == FormulaEligibilityStatus.InvalidValues))
+        {
+            return "invalid";
+        }
+
+        if (results.Any(result => result.Status == FormulaEligibilityStatus.MissingRequiredFields))
+        {
+            return "missing";
+        }
+
+        if (results.Any(result => result.Status == FormulaEligibilityStatus.Ready))
+        {
+            return "ready";
+        }
+
+        return "neutral";
+    }
+
+    private static string GetFormulaPanelSummary(IReadOnlyList<FormulaEligibilityResult> results)
+    {
+        var invalidCount = results.Count(result => result.Status == FormulaEligibilityStatus.InvalidValues);
+        if (invalidCount > 0)
+        {
+            return $"{invalidCount} invalid";
+        }
+
+        var missingCount = results.Count(result => result.Status == FormulaEligibilityStatus.MissingRequiredFields);
+        if (missingCount > 0)
+        {
+            return $"{missingCount} missing";
+        }
+
+        var readyCount = results.Count(result => result.Status == FormulaEligibilityStatus.Ready);
+        if (readyCount > 0)
+        {
+            return $"{readyCount} ready";
+        }
+
+        return "No runnable formulas";
+    }
+
+    private static string GetFormulaStatusClass(FormulaEligibilityStatus status) => status switch
+    {
+        FormulaEligibilityStatus.Ready => "ready",
+        FormulaEligibilityStatus.MissingRequiredFields => "missing",
+        FormulaEligibilityStatus.InvalidValues => "invalid",
+        FormulaEligibilityStatus.UnsupportedCombination => "unsupported",
+        FormulaEligibilityStatus.Disabled => "disabled",
+        _ => "disabled"
+    };
+
+    private static string GetFormulaStatusLabel(FormulaEligibilityStatus status) => status switch
+    {
+        FormulaEligibilityStatus.Ready => "Ready",
+        FormulaEligibilityStatus.MissingRequiredFields => "Missing",
+        FormulaEligibilityStatus.InvalidValues => "Invalid",
+        FormulaEligibilityStatus.UnsupportedCombination => "Unsupported",
+        FormulaEligibilityStatus.Disabled => "Disabled",
+        _ => status.ToString()
+    };
+
+    private static IEnumerable<string> GetFormulaDetails(FormulaEligibilityResult result)
+    {
+        if (result.Status == FormulaEligibilityStatus.Ready)
+        {
+            yield return "All required fields and ranges are satisfied.";
+        }
+
+        foreach (var field in result.MissingFields)
+        {
+            yield return $"Missing: {FormulaFieldLabels.GetLabel(field)}";
+        }
+
+        foreach (var message in result.InvalidMessages)
+        {
+            yield return $"Invalid: {message}";
+        }
+
+        foreach (var message in result.UnsupportedMessages)
+        {
+            yield return $"Unsupported: {message}";
+        }
+    }
+
     public class ConstantItem
     {
-        public ConstantItem(string label, string value, string formulaName)
+        public ConstantItem(string label, string value, string formulaName, FieldId field)
         {
             Label = label;
             Value = value;
             FormulaName = formulaName;
+            Field = field;
         }
 
         public string Label { get; }
         public string Value { get; set; }
         public string FormulaName { get; }
-    }
-
-    public class FormulaConfig
-    {
-        public FormulaConfig(string name, bool isEnabled, bool nonToric, bool toric, bool mLvc, bool hLvc, bool rk, bool kc, bool sosAl)
-        {
-            Name = name;
-            IsEnabled = isEnabled;
-            NonToric = nonToric;
-            Toric = toric;
-            MLvc = mLvc;
-            HLvc = hLvc;
-            Rk = rk;
-            Kc = kc;
-            SosAl = sosAl;
-        }
-
-        public string Name { get; }
-        public bool IsEnabled { get; set; }
-        public bool NonToric { get; }
-        public bool Toric { get; }
-        public bool MLvc { get; }
-        public bool HLvc { get; }
-        public bool Rk { get; }
-        public bool Kc { get; }
-        public bool SosAl { get; }
+        public FieldId Field { get; }
     }
 
     public record BiomHistoryItem(string Initials, string PatientId, string Pin, string Expires);
