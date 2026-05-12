@@ -770,6 +770,11 @@
                 </button>
             </div>
 
+            @{
+                var showPcaInterface = eye.IsToric || eye.IsPostLvcRk;
+                var showMeasuredPkTk = eye.IsPostLvcRk || (eye.IsToric && eye.PcaMode == "Measured");
+            }
+
             <div class="measurement-grid">
                 @MiniField(eye.AL)
                 @MiniField(eye.ACD)
@@ -781,26 +786,49 @@
                 {
                     @MiniAxisField(eye.K1, eye.K2)
                     @MiniAxisField(eye.K2, eye.K1)
-                    @MiniSelect("PCA", eye.PcaMode, value => eye.PcaMode = value, PcaOptions)
                 }
                 else
                 {
                     @MiniField(eye.K1)
                     @MiniField(eye.K2)
+                }
+
+                @if (showPcaInterface)
+                {
+                    @MiniSelect("PK", eye.PcaMode, value => eye.PcaMode = value, PcaOptions)
+                }
+                else
+                {
                     <div class="mini-field-placeholder" aria-hidden="true"></div>
                 }
 
-                @if (eye.IsToric && eye.PcaMode == "Measured")
+                @if (showMeasuredPkTk)
                 {
                     @MiniSelect("PK Device", eye.PkDevice, value => eye.PkDevice = value, PkDeviceOptions)
-                    @MiniAxisField(eye.PK1, eye.PK2)
-                    @MiniAxisField(eye.PK2, eye.PK1)
+                    @if (eye.IsToric)
+                    {
+                        @MiniAxisField(eye.PK1, eye.PK2)
+                        @MiniAxisField(eye.PK2, eye.PK1)
+                    }
+                    else
+                    {
+                        @MiniField(eye.PK1)
+                        @MiniField(eye.PK2)
+                    }
 
-                    @if (eye.PkDevice == "IOL Master 700")
+                    @if (eye.PkDevice == "IOLMaster 700")
                     {
                         <div class="mini-field-placeholder" aria-hidden="true"></div>
-                        @MiniAxisField(eye.TK1, eye.TK2)
-                        @MiniAxisField(eye.TK2, eye.TK1)
+                        @if (eye.IsToric)
+                        {
+                            @MiniAxisField(eye.TK1, eye.TK2)
+                            @MiniAxisField(eye.TK2, eye.TK1)
+                        }
+                        else
+                        {
+                            @MiniField(eye.TK1)
+                            @MiniField(eye.TK2)
+                        }
                     }
                 }
 
@@ -985,7 +1013,7 @@
         public bool IsPostLvcRk { get; set; }
         public string PostLvcRkType { get; set; } = "M-LVC";
         public string PcaMode { get; set; } = "Estimated";
-        public string PkDevice { get; set; } = "IOL Master 700";
+        public string PkDevice { get; set; } = "IOLMaster 700";
         public string Index { get; set; } = "1.3375";
         public string TargetRefraction { get; set; } = "-0.25";
         public string Manufacturer { get; set; } = "Alcon";
@@ -1008,7 +1036,7 @@
 
     private static readonly string[] IndexOptions = { "1.3375", "1.3320" };
     private static readonly string[] PcaOptions = { "Estimated", "Measured" };
-    private static readonly string[] PkDeviceOptions = { "IOL Master 700", "Pentacam" };
+    private static readonly string[] PkDeviceOptions = { "IOLMaster 700", "Pentacam" };
     private static readonly string[] ManufacturerOptions = { "---", "Alcon", "Bausch + Lomb", "Johnson & Johnson", "Zeiss" };
     private static readonly string[] IolOptions = { "---", "Clareon CNA0T0", "AcrySof IQ SN60WF", "enVista MX60", "Tecnis DCB00" };
     private static readonly string[] PostLvcRkOptions = { "M-LVC", "H-LVC", "RK" };
