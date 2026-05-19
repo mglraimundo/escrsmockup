@@ -133,15 +133,22 @@ The formula then decides which of those it accepts. This is why no visible `K So
   "postLvcRk": [ "MLvc" ],
   "keratometryInputs": [ "PentacamPK" ],
   "keratoconus": false,
-  "sosAL": false
+  "sosAL": false,
+  "requiredFields": [ "WTW" ]
 }
 ```
 
 This means:
 
 ```text
-Toric + M-LVC + measured Pentacam PK + no KC + no SoS AL
+Toric + M-LVC + measured Pentacam PK + no KC + no SoS AL, additionally mandating WTW for this specific mode.
 ```
+
+### Combination-Specific Required Fields
+
+While a formula has a base set of required fields defined in `requiredFields` at the formula level, specific combinations can directly mandate other, additional fields using the `"requiredFields"` array inside a combination object. For example:
+- Standard eye combination: Only requires standard fields (`AL`, `ACD`, etc.)
+- KC combination: Mandates `WTW` in addition to standard fields.
 
 Boolean properties:
 
@@ -206,6 +213,64 @@ This allows estimated mode, plus measured IOLMaster 700 TK. It does not allow Pe
 ```
 
 Do not include `HLvc` or `RK`.
+
+## Complex Scenarios and Mutual Exclusivity
+
+Since `combinations` is an array of objects, the evaluator treats the list as a logical **OR** of several **AND** clauses (Disjunctive Normal Form). This gives you the flexibility to define complex, mutually exclusive rules without changing any C# code.
+
+### Example: Toric + Post-LASIK OR Toric + KC, but NOT Post-LASIK + KC
+
+If you want a formula to support:
+1. Toric lenses on post-LASIK/post-refractive eyes (`postLvcRk` is `MLvc`, `HLvc`, or `RK`), OR
+2. Toric lenses on keratoconus eyes (`keratoconus` is `true`),
+3. BUT you want to prevent the combination of both post-refractive surgery and keratoconus concurrently,
+
+You can define this simply and cleanly using two separate combination objects in the `combinations` list:
+
+```json
+"combinations": [
+  {
+    "toric": true,
+    "postLvcRk": [ "MLvc", "HLvc", "RK" ],
+    "keratoconus": false
+  },
+  {
+    "toric": true,
+    "postLvcRk": [ "None" ],
+    "keratoconus": true
+  }
+]
+```
+
+#### Why this works:
+- If a patient has **Toric + Post-LASIK** (and is `keratoconus: false`), it matches the first combination.
+- If a patient has **Toric + Keratoconus** (and is `postLvcRk: None`), it matches the second combination.
+- If a patient has **both** (Toric + Keratoconus + Post-LASIK), it will match neither combination:
+  - The first combination fails because `keratoconus` is `true` in the eye, but the combination requires `false`.
+  - The second combination fails because `postLvcRk` is `MLvc` (or similar) in the eye, but the combination requires `None`.
+
+### Example: Toric + Post-LASIK OR Non-Toric + KC, but NOT Toric + KC
+
+If you want a formula to support:
+1. Toric lenses on post-LASIK eyes, OR
+2. Non-toric lenses on keratoconus eyes,
+3. BUT you do NOT support toric lenses for keratoconus eyes,
+
+You can write:
+
+```json
+"combinations": [
+  {
+    "toric": true,
+    "postLvcRk": [ "MLvc", "HLvc", "RK" ]
+  },
+  {
+    "toric": false,
+    "postLvcRk": [ "None" ],
+    "keratoconus": true
+  }
+]
+```
 
 ## Required Fields
 

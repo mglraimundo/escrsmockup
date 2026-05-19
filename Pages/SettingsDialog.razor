@@ -24,13 +24,21 @@
                     <tbody>
                         @foreach (var formula in _workingRules.Formulas)
                         {
-                            <tr>
-                                <td class="col-enabled">
+                            var isExpanded = _expandedFormulaIds.Contains(formula.Id);
+                            <tr class="formula-row @(isExpanded ? "expanded" : "")" @onclick="@(() => ToggleFormulaExpansion(formula.Id))">
+                                <td class="col-enabled" @onclick:stopPropagation="true">
                                     <MudSwitch T="bool"
                                                @bind-Value="formula.Enabled"
                                                Color="Color.Primary" />
                                 </td>
-                                <td class="col-formula">@formula.Name</td>
+                                <td class="col-formula">
+                                    <div class="formula-name-container">
+                                        @formula.Name
+                                        <MudIcon Icon="@(isExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                                 Size="Size.Small"
+                                                 Class="formula-chevron" />
+                                    </div>
+                                </td>
                                 <td class="col-capability">@CapabilityDot(SupportsToric(formula, false))</td>
                                 <td class="col-capability">@CapabilityDot(SupportsToric(formula, true))</td>
                                 <td class="col-capability">@CapabilityDot(SupportsPostLvc(formula, PostLvcRkType.MLvc))</td>
@@ -39,6 +47,48 @@
                                 <td class="col-capability">@CapabilityDot(SupportsFlag(formula, combination => combination.Keratoconus, true))</td>
                                 <td class="col-capability">@CapabilityDot(SupportsFlag(formula, combination => combination.SosAL, true))</td>
                             </tr>
+                            @if (isExpanded)
+                            {
+                                <tr class="formula-details-row">
+                                    <td colspan="9" class="col-details-td">
+                                        <div class="formula-details-content">
+                                            <div class="details-section-title">Supported Clinical Combinations</div>
+                                            @if (formula.Combinations.Count == 0)
+                                            {
+                                                <div class="details-text">Supports all standard eye combinations.</div>
+                                            }
+                                            else
+                                            {
+                                                <ul class="details-list">
+                                                    @foreach (var combo in formula.Combinations)
+                                                    {
+                                                        <li>@FormatCombination(combo)</li>
+                                                    }
+                                                </ul>
+                                            }
+
+                                            @if (formula.RequiredFields.Count > 0 || formula.ConditionalRequiredFields.Count > 0)
+                                            {
+                                                <div class="details-section-title spacing-top">Required Fields</div>
+                                                <div class="details-text">
+                                                    <strong>Always Required:</strong> @string.Join(", ", formula.RequiredFields.Select(FormulaFieldLabels.GetLabel))
+                                                </div>
+                                                @if (formula.ConditionalRequiredFields.Count > 0)
+                                                {
+                                                    <ul class="details-list spacing-mini">
+                                                        @foreach (var cond in formula.ConditionalRequiredFields)
+                                                        {
+                                                            <li>
+                                                                <strong>Required when @(FormatCondition(cond.When)):</strong> @string.Join(", ", cond.Fields.Select(FormulaFieldLabels.GetLabel))
+                                                            </li>
+                                                        }
+                                                    </ul>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
@@ -61,6 +111,7 @@
     public FormulaRuleSet FormulaRules { get; set; } = new();
 
     private FormulaRuleSet _workingRules = new();
+    private HashSet<string> _expandedFormulaIds = new();
 
     protected override void OnParametersSet()
     {
@@ -100,5 +151,109 @@
     private static bool SupportsFlag(FormulaRule formula, Func<FormulaCombination, bool?> selector, bool value)
     {
         return formula.Combinations.Any(combination => !selector(combination).HasValue || selector(combination) == value);
+    }
+
+    private void ToggleFormulaExpansion(string formulaId)
+    {
+        if (!_expandedFormulaIds.Add(formulaId))
+        {
+            _expandedFormulaIds.Remove(formulaId);
+        }
+    }
+
+    private static string FormatCombination(FormulaCombination combo)
+    {
+        var parts = new List<string>();
+
+        if (combo.Toric.HasValue)
+        {
+            parts.Add(combo.Toric.Value ? "Toric" : "Non-toric");
+        }
+        else
+        {
+            parts.Add("Toric / Non-toric");
+        }
+
+        if (combo.PostLvcRk.Count > 0)
+        {
+            var lvcParts = combo.PostLvcRk.Select(t => t switch
+            {
+                PostLvcRkType.None => "Standard eyes",
+                PostLvcRkType.MLvc => "M-LVC",
+                PostLvcRkType.HLvc => "H-LVC",
+                PostLvcRkType.RK => "RK",
+                _ => t.ToString()
+            });
+            parts.Add(string.Join("/", lvcParts));
+        }
+        else
+        {
+            parts.Add("Any eye history (Standard/LVC/RK)");
+        }
+
+        if (combo.Keratoconus.HasValue)
+        {
+            parts.Add(combo.Keratoconus.Value ? "Keratoconus (KC)" : "Non-KC");
+        }
+
+        if (combo.SosAL.HasValue)
+        {
+            parts.Add(combo.SosAL.Value ? "SoS AL" : "Standard AL");
+        }
+
+        if (combo.KeratometryInputs.Count > 0)
+        {
+            var kInputs = combo.KeratometryInputs.Select(FormulaEligibilityEvaluator.FormatKeratometryInput);
+            parts.Add($"with {string.Join(" or ", kInputs)}");
+        }
+
+        if (combo.RequiredFields.Count > 0)
+        {
+            var reqFields = combo.RequiredFields.Select(FormulaFieldLabels.GetLabel);
+            parts.Add($"mandates: {string.Join(" and ", reqFields)}");
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    private static string FormatCondition(FormulaCondition condition)
+    {
+        var parts = new List<string>();
+
+        if (condition.Toric.HasValue)
+        {
+            parts.Add(condition.Toric.Value ? "toric mode is active" : "non-toric mode is active");
+        }
+
+        if (condition.PostLvcRk.Count > 0)
+        {
+            var lvcParts = condition.PostLvcRk.Select(t => t switch
+            {
+                PostLvcRkType.None => "Standard",
+                PostLvcRkType.MLvc => "M-LVC",
+                PostLvcRkType.HLvc => "H-LVC",
+                PostLvcRkType.RK => "RK",
+                _ => t.ToString()
+            });
+            parts.Add($"eye history is {string.Join("/", lvcParts)}");
+        }
+
+        if (condition.Keratoconus.HasValue)
+        {
+            parts.Add(condition.Keratoconus.Value ? "KC mode is active" : "KC mode is inactive");
+        }
+
+        if (condition.SosAL.HasValue)
+        {
+            parts.Add(condition.SosAL.Value ? "SoS AL mode is active" : "SoS AL mode is inactive");
+        }
+
+        if (condition.KeratometryInputs.Count > 0)
+        {
+            var kInputs = condition.KeratometryInputs.Select(FormulaEligibilityEvaluator.FormatKeratometryInput);
+            parts.Add($"using {string.Join(" or ", kInputs)}");
+        }
+
+        return string.Join(" AND ", parts);
     }
 }

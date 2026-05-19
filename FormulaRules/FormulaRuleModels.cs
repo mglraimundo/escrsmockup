@@ -110,6 +110,8 @@ public sealed class FormulaCombination
     public bool? Keratoconus { get; set; }
 
     public bool? SosAL { get; set; }
+
+    public List<FieldId> RequiredFields { get; set; } = new();
 }
 
 public sealed class ConditionalRequiredFields

@@ -120,6 +120,11 @@ public static class FormulaEligibilityEvaluator
     {
         var fields = formula.RequiredFields.ToList();
 
+        if (context.Combination.RequiredFields is { Count: > 0 } comboRequired)
+        {
+            fields.AddRange(comboRequired);
+        }
+
         foreach (var conditional in formula.ConditionalRequiredFields.Where(conditional => Matches(conditional.When, eye, context)))
         {
             fields.AddRange(conditional.Fields);
